@@ -1,0 +1,17 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "fmue423",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "dev_uepy",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+                "uepy"
+			]
+		}
+	]
+}
