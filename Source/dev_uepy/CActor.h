@@ -23,9 +23,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* mesh;
-
-    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="WorldContextObject", HidePin="WorldContextObject"))
-    static void CallTehPythonGlobal(UObject *WorldContextObject);
 };
 
 UCLASS()

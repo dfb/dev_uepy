@@ -1,7 +1,6 @@
 import uepy
 from uepy import log, logTB
 import random, math, os
-import cactor
 
 moduleDir = os.path.abspath(os.path.dirname(__file__))
 
@@ -72,10 +71,12 @@ being the housekeeper, because we can't really get very far without that. New pl
         - game module on load can patch uepy module
         - uepy.AsACActor, .AsActor, .etc methods (some provided by game module)
 
-    - just to push things along:
-        - have CActor not have a mesh comp, but add it all via python
-        - have py actor add a child comp or two as well
-    - have a CActor delegate member (or maybe there already is one) and bind/unbind a listener on it
+    TODO
+        - can we add classes to uepy instead of in a separate embedded module?
+        - just to push things along:
+            - have CActor not have a mesh comp, but add it all via python
+            - have py actor add a child comp or two as well
+        - have a CActor delegate member (or maybe there already is one) and bind/unbind a listener on it
 
 
     - add rudimentary uepy plugin to modus 4.23
@@ -97,6 +98,7 @@ QOL soon
 LATER
 - the engine nulls out objs it kills, so we could have the tracker turn around and fiddle with the py obj - like set a flag in the
     py inst saying the engineObj is dead or something
+- in PIE, we leak a GameInstance each time you run (do we care? not sure)
 
 '''
 class PSketchObject:
@@ -134,7 +136,7 @@ class MySO(PSketchObject):
         # so that we can get pybind11 to send us a properly downcasted variable, which we store for future calls.
         try:
             log('MySO.__init__', engineObj, '(pre-casty)')
-            super().__init__(cactor.casty(engineObj))
+            super().__init__(uepy.AsACActor(engineObj))
             r = 1000
             self.pos = [r*random.random(), r*random.random(), r*random.random()]
             self.angle = 0
@@ -201,7 +203,10 @@ uepy.RegisterPythonSubclass('MySO', '/Script/dev_uepy.CActor', MySO)
 
 class AnotherSO(PSketchObject):
     def __init__(self, engineObj):
-        super().__init__(cactor.casty(engineObj))
+        try:
+            super().__init__(uepy.AsACActor(engineObj))
+        except:
+            logTB()
 
     def BeginPlay(self):
         self.yaw = 0
@@ -213,13 +218,4 @@ class AnotherSO(PSketchObject):
         self.SetActorRotation(r)
 
 uepy.RegisterPythonSubclass('AnotherSO', '/Script/dev_uepy.CActor', AnotherSO)
-
-def TehPythonGlobal(world):
-    try:
-        log('TehPythonGlobal - about to spawn')
-        cactor.spawn(world, MySO)
-        log('TPG - done')
-    except:
-        logTB()
-
 

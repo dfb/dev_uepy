@@ -5,29 +5,6 @@
 #include "common.h"
 #include "Kismet/GameplayStatics.h"
 
-PYBIND11_EMBEDDED_MODULE(cactor, m) {
-    py::class_<ADActor, AActor, UnrealTracker<ADActor>>(m, "ADActor")
-        ;
-
-    py::class_<ACActor, AActor, UnrealTracker<ACActor>>(m, "ACActor")
-        .def_readwrite("mesh", &ACActor::mesh)
-        ;
-
-    m.def("casty", [](UObject *engineObj) -> ACActor*
-    {
-        return Cast<ACActor>(engineObj);
-    }, py::return_value_policy::reference);
-
-	m.def("spawn", [](UWorld *world, py::object pyclass) -> void
-	{
-		LOG("SPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-        FTransform transform;
-        UClass *klass = FindObject<UClass>(ANY_PACKAGE, TEXT("AnotherSO"));
-        ACActor * actor = world->SpawnActorDeferred<ACActor>(klass, transform);
-        UGameplayStatics::FinishSpawningActor(actor, transform);
-	});
-}
-
 // Sets default values
 ACActor::ACActor() : AActor(), IPyBridgeMixin()
 {
@@ -70,12 +47,5 @@ void ACActor::Tick(float DeltaTime)
     {
         LOG("EXCEPTION %s", UTF8_TO_TCHAR(e.what()));
     }
-}
-
-void ACActor::CallTehPythonGlobal(UObject *WorldContextObject)
-{
-    UWorld* world = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
-    py::module ue = py::module::import("engine_startup");
-    ue.attr("TehPythonGlobal")(world);
 }
 
