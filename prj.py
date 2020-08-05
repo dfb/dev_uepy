@@ -243,7 +243,7 @@ def BuildModus(buildRoot, newVer, isRelease, clean, buildConfig):
 
     os.environ['DEVUEPY_IS_BUILDING'] = '0' # see Scripts/common.py
 
-def CLIBuild():
+def CLIBuild(args):
     clean = False
     buildConfig = 'Shipping'
     isRelease = True

@@ -5,11 +5,8 @@
 #include "common.h"
 #include "Modules/ModuleManager.h"
 
-UPyObjectTracker *TRACKER = nullptr;
-
 void FdevuepyModule::StartupModule()
 {
-	TRACKER = NewObject<UPyObjectTracker>();
 }
 
 void FdevuepyModule::ShutdownModule()
