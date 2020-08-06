@@ -11,14 +11,10 @@ void FinishPythonInit(py::module& uepy)
     LOG("Setting up dev_uepy-specific Python stuff");
 
     // inject into the uepy module stuff specific to our game module
-    py::class_<ADActor, AActor, UnrealTracker<ADActor>>(uepy, "ADActor");
-    py::class_<ACActor, AActor, UnrealTracker<ACActor>>(uepy, "ACActor")
-        .def_readwrite("mesh", &ACActor::mesh)
-        ;
+    py::class_<ACActor, AActor, UnrealTracker<ACActor>>(uepy, "ACActor");
 
     // each class should define one of these so that a generic UObject pointer can be downcasted (pybind11 can't always figure it out on its own)
     uepy.def("AsACActor", [](UObject *engineObj) -> ACActor* { return Cast<ACActor>(engineObj); }, py::return_value_policy::reference);
-    uepy.def("AsADActor", [](UObject *engineObj) -> ADActor* { return Cast<ADActor>(engineObj); }, py::return_value_policy::reference);
 }
 
 void FdevuepyModule::StartupModule()

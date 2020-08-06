@@ -20,24 +20,5 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* mesh;
 };
 
-UCLASS()
-class DEV_UEPY_API ADActor : public AActor, public IPyBridgeMixin
-{
-	GENERATED_BODY()
-
-public:	
-	ADActor() : AActor(), IPyBridgeMixin() {};
-
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override {};
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override {};
-};
