@@ -1,5 +1,23 @@
 from uepy import log, logTB
+import uepy
 from importlib import reload
+import sys
+
+# Capture sys.stdout/stderr
+class OutRedir:
+    def write(self, buf):
+        log(buf)
+    def flush(self):
+        pass
+    def isatty(self):
+        return False
+sys.stdout = OutRedir()
+sys.stderr = OutRedir()
+del OutRedir
+
+# some stuff for interactive
+__builtins__['reload'] = reload
+__builtins__['uepy'] = uepy
 
 # AVOID module-level stuff with side effects!
 
@@ -59,13 +77,45 @@ Hmm... no, doing all of that manually for now wouldn't be that bad - unfun, but 
 at this point, it seems like everything except testing it in a build is in the "can do, just need to go do it" camp, with the first item on that list
 being the housekeeper, because we can't really get very far without that. New plan:
     TODO
-        - just to push things along:
-            - verify all works in a build
-        - sidebar: experiment to see if we /could/ expose some uprops to the editor, e.g. an editor-editable int prop for starters
+        - python console
+            - create a widget subclass SPythonConsole and move all code into it; make module just instantiate this widget
+            - make SPyCons a glog source so it can get the messages (FOutputDevice)
+            - in a destructor, deregister with glog
+            - trim any 'uepy' or whatever prefix
+            - prefix user input with '>>>'
+            - on pre-pie begin, clear all entries
+            - in destructor, unreg for pre-pie begin event
+            - wire up filter text on change
+            - change render color for all matching lines
+        - spawner
+            - maybe impl in python?? (expose the API to register the nomad tab)
+            - uepy.slate module?
+
+        - umg
+            - create a UEditorUtilityWidget
+            - compare notes with the plugin stuffs - which approach should we use?
+            - learn how to make a widget in UMG editor but control it via C++ (and then python)
+            - make a dummy PSO widget that has a button that spawns a MySO or something
+            - finally maybe get into the work of tracking registered classes so we can make a list of them?
+
+            - in BP, create some new UMG panel with logic behind it - a button that broadcasts a msg to actors to e.g. change their color
+            - make a BP actor that responds to that event
+            - bind a key to show/hide this umg panel (2d, over the 3d window)
+            - make C++ & Py actors implement that interface and get it working
+            - side quest: see if we can say that only the py actor implements it! - have REgisterPyClass take an optional list of interface classes
+            - create another UMG panel, this time just in python, that does more or less the same thing
+            - have a separate key show/hide it as well
+
+        - editor windows
+            - log window w/ eval line, auto-jump to end, checkbox to auto-clear on start
+            - PSO spawner replacement
+        - side quest: experiment to see if we /could/ expose some uprops to the editor, e.g. an editor-editable int prop for starters
             - gonna need a UI button to spawn a python obj
             - if that works, see if we can successfully save a python actor in the map!!
+            - if that works, see if we can also expose ufunctions too?? (maybe as a later 'todo')
         - noodle on organization some
-            - uepy.classes, .structs, .enums?
+            - uepy.classes, .structs, .enums? or better to have uepy.umg, .actor, .mesh, .material ? both? (thinking in terms of both classes but also supporting helper code)
+            ue
             - org of plugin-supplied C++ and py code - where does that all live in the filesystem, how is it managed?
         - do something with umg
         - do something with binding to a delegate event
@@ -83,21 +133,29 @@ being the housekeeper, because we can't really get very far without that. New pl
     - port existing PSOs while also adding in helpers to reduce manual stuffs
     - get scriptrunner working again
     - port all the remaining py stuff and rip out UnrealEnginePython
+    - OnConstruct
     - port game mode, instance, state, etc. out of BP
     - massive code cleanup to reduce all the duplication and cruft from the earlier hacking
     - what about calls to Super::??
 
 QOL soon
+- don't require call to RegisterPythonSubclass - use a metaclass or something
 - crash on import error of main
 - reloadable modules - or maybe move this out of main to something that gets reloaded?
 - prj.py needs to package up everything in Content/Scripts I think
+- W i d e c h a r output during build for some reason
+- UObject.GetName
+- FVector/FRotator default args if omitted
+- py console up/down arrow to go thru history
 
 LATER
 - the engine nulls out objs it kills, so we could have the tracker turn around and fiddle with the py obj - like set a flag in the
-    py inst saying the engineObj is dead or something
+    py inst saying the engineObj is dead or something, and then have the py base classes check for self.engineObj is None
 - in PIE, we leak a GameInstance each time you run (do we care? not sure)
 - pyso spawner, py console like with UnrealEnginePython
 - tools to auto-gen a lot of the binding code - template metaprogramming?, CppHeaderParser if needed
+- interfaces defined in py and implementable by py?
+    - we can declare that it implements the interface, but we have to register the functions of the interface
 
 '''
 

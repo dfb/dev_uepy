@@ -16,9 +16,12 @@ class PyActor:
     def GetActorRotation(self): return self.engineObj.GetActorRotation()
     def SetActorRotation(self, r): self.engineObj.SetActorRotation(r)
     def BeginPlay(self): pass
+    def Tick(self, dt): pass
     def CreateUStaticMeshComponent(self, name): return self.engineObj.CreateUStaticMeshComponent(name)
     def GetRootComponent(self): return self.engineObj.GetRootComponent()
     def SetRootComponent(self, s): self.engineObj.SetRootComponent(s)
+
+    def OnSomeUserEvent(self): log('OnSomeUserEvent', self)
 
 rock = uepy.LoadMesh('/Game/StarterContent/Props/SM_Rock.SM_Rock')
 couch = uepy.LoadMesh('/Game/StarterContent/Props/SM_Couch.SM_Couch')
@@ -222,4 +225,27 @@ class Sentry(PyActor):
         self.arm.SetRelativeRotation(cur)
 
 uepy.RegisterPythonSubclass('Sentry', '/Script/dev_uepy.CActor', Sentry)
+
+DOOR_MESH = uepy.LoadMesh('/Game/StarterContent/Props/SM_DoorFrame.SM_DoorFrame')
+class ColorChanger(PyActor):
+    def __init__(self, engineObj):
+        try:
+            super().__init__(uepy.AsAColorChangingActor(engineObj))
+            self.SetRootComponent(self.CreateUStaticMeshComponent('body'))
+            self.body = uepy.AsUStaticMeshComponent(self.GetRootComponent())
+            self.body.SetStaticMesh(DOOR_MESH)
+        except:
+            logTB()
+
+    def DoSomething(self, i):
+        try:
+            log('Do something!', self, i)
+            self.SetActorRotation(FRotator(RR(0,360), RR(0,360), RR(0,360)))
+        except:
+            logTB()
+
+uepy.RegisterPythonSubclass('ColorChanger', '/Script/dev_uepy.ColorChangingActor', ColorChanger)
+
+#log('ACActor:', uepy.ACActor, uepy.ACActor.StaticClass().ImplementsInterface(uepy.UTestInterface.StaticClass()))
+#log('ColorChanger:', uepy.AColorChangingActor, uepy.AColorChangingActor.StaticClass().ImplementsInterface(uepy.UTestInterface.StaticClass()))
 
