@@ -77,19 +77,33 @@ Hmm... no, doing all of that manually for now wouldn't be that bad - unfun, but 
 at this point, it seems like everything except testing it in a build is in the "can do, just need to go do it" camp, with the first item on that list
 being the housekeeper, because we can't really get very far without that. New plan:
     TODO
-        - python console
-            - create a widget subclass SPythonConsole and move all code into it; make module just instantiate this widget
-            - make SPyCons a glog source so it can get the messages (FOutputDevice)
-            - in a destructor, deregister with glog
-            - trim any 'uepy' or whatever prefix
-            - prefix user input with '>>>'
-            - on pre-pie begin, clear all entries
-            - in destructor, unreg for pre-pie begin event
-            - wire up filter text on change
-            - change render color for all matching lines
-        - spawner
-            - maybe impl in python?? (expose the API to register the nomad tab)
-            - uepy.slate module?
+        - uepy.umg has a UUserWidget class we can extend in python
+        - on startup, create and register a UUserWidget subclass that does basically nothing
+        - see if we can use it in UMG
+        - expose just enough APIs for that child class to add a button or something
+        - make sure it shows up in e.g. a parent BP widget or something
+        - uepy.editor module
+        - uepy.editor exposes a func to register a new nomad tab spawner
+            - takes a menu name and a class to instantiate, then instantiates it and wraps it in an SDockTab
+            - maybe it takes the module and class name so it can reload the module on open?
+            - have it unregister any prior version of it first
+
+        - delegates!
+            - uepy defines FPyDelegate base class
+            - FPyEditor, FPySlate, etc. child classes as needed
+            - delegate constructor takes a py callable and stores it
+            - delegate defines methods with all kinds of signatures as needed
+        - add a BP widget and bind events to it
+        - add a button to it that logs a message
+        - expose to py the code necessary to launch the editor utility widget, instead of having the module do it
+        - start exposing to py the stuff needed to build more editor utility widgets
+        - expose to py a function for helping us detect editor vs game vs whatever
+        - have main.py's Init, if in editor, import spawner module
+        - flesh out spawner module and uepy.umg as needed
+        - impl some stuff in spawner
+            - filter/dropdown w/ actor classes + spawn button
+            - delete and respawn selected
+            - watch & reload
 
         - umg
             - create a UEditorUtilityWidget
@@ -106,9 +120,6 @@ being the housekeeper, because we can't really get very far without that. New pl
             - create another UMG panel, this time just in python, that does more or less the same thing
             - have a separate key show/hide it as well
 
-        - editor windows
-            - log window w/ eval line, auto-jump to end, checkbox to auto-clear on start
-            - PSO spawner replacement
         - side quest: experiment to see if we /could/ expose some uprops to the editor, e.g. an editor-editable int prop for starters
             - gonna need a UI button to spawn a python obj
             - if that works, see if we can successfully save a python actor in the map!!
@@ -137,6 +148,9 @@ being the housekeeper, because we can't really get very far without that. New pl
     - port game mode, instance, state, etc. out of BP
     - massive code cleanup to reduce all the duplication and cruft from the earlier hacking
     - what about calls to Super::??
+
+UMG vs SLATE: it looks like we can now do UUserWidget subclasses for editor panels, such that it probably makes the most sense to invest in UMG-based stuffs
+as opposed to dividing attention between slate and UMG (we can always add support for slate later if we need)
 
 QOL soon
 - don't require call to RegisterPythonSubclass - use a metaclass or something
