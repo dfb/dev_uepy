@@ -74,6 +74,7 @@ void AColorChangingActor::Tick(float DeltaTime)
     }
 }
 
+/*
 void AColorChangingActor::DoSomething_Implementation(int i)
 {
     try {
@@ -83,4 +84,4 @@ void AColorChangingActor::DoSomething_Implementation(int i)
         LOG("EXCEPTION %s", UTF8_TO_TCHAR(e.what()));
     }
 }
-
+*/

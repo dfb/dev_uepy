@@ -63,6 +63,13 @@ DONE - 2) object ownership / lifecycle - doable, just unfun
     - make c++ delegates work, but then invent something for just-py delegates for when we get to e.g. pygameinstance and all pySOs
 6) mem leaks, packaged build issues, misc gremlins - doable, and hopefully less of an issue due to less code?
 
+big projects / areas
+- UMG / configurators (at some point: support for Ken's BP widgets or reimplement in C++/Python)
+- delegates
+- exposing more APIs, classes, structs, enums
+- code cleanup, better macros, less repetition
+- dev process: reloading code w/o crashing, etc.
+
 based on the above, I think if I can get comfortable with #1, we can really commit to this path overall.
     Stuff to achieve:
         - support for array params and return values
@@ -77,22 +84,20 @@ Hmm... no, doing all of that manually for now wouldn't be that bad - unfun, but 
 at this point, it seems like everything except testing it in a build is in the "can do, just need to go do it" camp, with the first item on that list
 being the housekeeper, because we can't really get very far without that. New plan:
     TODO
-        - uepy.umg has a UUserWidget class we can extend in python
-        - on startup, create and register a UUserWidget subclass that does basically nothing
-        - see if we can use it in UMG
-        - expose just enough APIs for that child class to add a button or something
-        - make sure it shows up in e.g. a parent BP widget or something
+        - delegates!
+            - currently leaking delegates AND having to use the crummy hack to keep the delegate alive! :(
+
+        - expose enough stuff to recreate the spawner UI
+        - create a UMG test actor
+            - on start, creates a particular widget and adds it to the viewport
+            - on tick, see if the widget's file has changed
+            - if it has changed, remove the old widget, reload the widget's module, and add the widget to the viewport again
         - uepy.editor module
         - uepy.editor exposes a func to register a new nomad tab spawner
             - takes a menu name and a class to instantiate, then instantiates it and wraps it in an SDockTab
             - maybe it takes the module and class name so it can reload the module on open?
             - have it unregister any prior version of it first
 
-        - delegates!
-            - uepy defines FPyDelegate base class
-            - FPyEditor, FPySlate, etc. child classes as needed
-            - delegate constructor takes a py callable and stores it
-            - delegate defines methods with all kinds of signatures as needed
         - add a BP widget and bind events to it
         - add a button to it that logs a message
         - expose to py the code necessary to launch the editor utility widget, instead of having the module do it
@@ -154,6 +159,7 @@ as opposed to dividing attention between slate and UMG (we can always add suppor
 
 QOL soon
 - don't require call to RegisterPythonSubclass - use a metaclass or something
+- keep delegates alive w/o saving a ref to them
 - crash on import error of main
 - reloadable modules - or maybe move this out of main to something that gets reloaded?
 - prj.py needs to package up everything in Content/Scripts I think
@@ -161,6 +167,8 @@ QOL soon
 - UObject.GetName
 - FVector/FRotator default args if omitted
 - py console up/down arrow to go thru history
+- py::str <--> FString
+- default 3rd arg on createwidget call
 
 LATER
 - the engine nulls out objs it kills, so we could have the tracker turn around and fiddle with the py obj - like set a flag in the
@@ -170,6 +178,18 @@ LATER
 - tools to auto-gen a lot of the binding code - template metaprogramming?, CppHeaderParser if needed
 - interfaces defined in py and implementable by py?
     - we can declare that it implements the interface, but we have to register the functions of the interface
-
+- a BPCall function, for calling BP from C++ / Python
+    - BPCall(obj, funcName, argsProbablyWithTypeInfo) --> one or more return values
+    - use obj->class->FindFunction, obj->ProcessEvent
+    https://answers.unrealengine.com/questions/516440/ufunction-invoke.html
+    https://answers.unrealengine.com/questions/7732/a-sample-for-calling-a-ufunction-with-reflection.html
+    https://answers.unrealengine.com/questions/432681/how-to-pass-an-object-param-into-processevent.html
+    https://forums.unrealengine.com/development-discussion/c-gameplay-programming/112236-call-ufunction-with-return-value-via-reflection
+    https://forums.unrealengine.com/development-discussion/c-gameplay-programming/1508108-is-it-possible-to-infer-parameter-types-of-a-ufunction-in-code
+    https://forums.unrealengine.com/development-discussion/c-gameplay-programming/1665895-pass-fstring-as-a-parameter-to-uobject-processevent-ufunction-void
+    https://answers.unrealengine.com/questions/135649/how-could-i-call-a-blueprint-function-from-a-c-cod.html
+    https://answers.unrealengine.com/questions/247249/call-a-blueprint-function-from-c.html
+    https://answers.unrealengine.com/questions/116529/call-blueprint-functions-from-c.html
+    https://github.com/iniside/ActionRPGGame/blob/master/Source/ActionRPGGame/Private/UI/Menu/ARLoginScreenView.cpp
 '''
 

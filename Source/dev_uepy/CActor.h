@@ -37,7 +37,7 @@ public:
 };
 
 UCLASS()
-class DEV_UEPY_API AColorChangingActor : public AActor, public IPyBridgeMixin, public ITestInterface
+class DEV_UEPY_API AColorChangingActor : public AActor, public IPyBridgeMixin
 {
     GENERATED_BODY()
 
@@ -47,5 +47,4 @@ protected:
 public:	
     AColorChangingActor();
 	virtual void Tick(float DeltaTime) override;
-    virtual void DoSomething_Implementation(int i) override;
 };

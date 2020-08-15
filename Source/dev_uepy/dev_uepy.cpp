@@ -26,7 +26,7 @@ void FinishPythonInit(py::module& uepy)
 
 void FdevuepyModule::StartupModule()
 {
-    FPythonDelegates::LaunchInit.AddStatic(&FinishPythonInit);
+    FUEPyDelegates::LaunchInit.AddStatic(&FinishPythonInit);
 }
 
 void FdevuepyModule::ShutdownModule()
