@@ -1,31 +1,26 @@
 from uepy import log, logTB
 import uepy
-from importlib import reload
-import sys
 
-# Capture sys.stdout/stderr
-class OutRedir:
-    def write(self, buf):
-        log(buf)
-    def flush(self):
-        pass
-    def isatty(self):
-        return False
-sys.stdout = OutRedir()
-sys.stderr = OutRedir()
-del OutRedir
-
-# some stuff for interactive
-__builtins__['reload'] = reload
-__builtins__['uepy'] = uepy
-
-# AVOID module-level stuff with side effects!
+try:
+    # Add any 3rd party libs to sys.path
+    import deps
+    deps.Discover()
+except:
+    logTB()
 
 def Init():
     '''called from ue4 when this module is loaded on startup (or, in dev, when the c++ game module is recompiled'''
     log('main.Init called')
 
+# AVOID module-level stuff with side effects?
+# TODO: we need better rules around what happens at module scope vs Init (and if Init is needed at all)
 import myactors
+
+try:
+    import uepy.editor
+    import editor_spawner
+except ImportError:
+    pass # not in editor
 
 def OnPreBeginPIE():
     log('main.OnPreBeginPIE called')
@@ -59,8 +54,7 @@ DONE - 2) object ownership / lifecycle - doable, just unfun
     - or not, if we can solve the get-rid-of-Become problem, and the C++ class uprops any state vars (e.g. config)
 4) interaction with legacy BP stuff (gamestate, gamemode) - doable, but maybe because we completely rip out the old stuff. also depends on replication if we go that route
     - maybe not: those things are callable from C++, no?
-5) delegate binding - doable, just need to invent something probably
-    - make c++ delegates work, but then invent something for just-py delegates for when we get to e.g. pygameinstance and all pySOs
+DONE - (well, except for leaked handles) 5) delegate binding - doable, just need to invent something probably - make c++ delegates work, but then invent something for just-py delegates for when we get to e.g. pygameinstance and all pySOs
 6) mem leaks, packaged build issues, misc gremlins - doable, and hopefully less of an issue due to less code?
 
 big projects / areas
@@ -68,38 +62,120 @@ big projects / areas
 - delegates
 - exposing more APIs, classes, structs, enums
 - code cleanup, better macros, less repetition
+    - UClass objects vs Py classes, e.g. RegisterPythonSubclass
+    - could we make C++ side have a helper func/macro that given a py class, a uclass, or a class path produces a UClass?
 - dev process: reloading code w/o crashing, etc.
 
-based on the above, I think if I can get comfortable with #1, we can really commit to this path overall.
-    Stuff to achieve:
-        - support for array params and return values
-        - impl MyGameMode and have MyGameInstance return its class
-        - have MyGameMode return/create MyGameState
-        - impl MyGameState in C++ and py & on begin play (or periodically in tick), spawn some chairs
-        - delegates
-        - impl far more engine APIs callable from python
+THIS WEEK
+- fix leaking of bound delegates
+- get actorwatcher working in editor, not just in PIE
+- make dev mode work only in certain scenarios, e.g. a command line param is present or in editor
+- have a shortcut in uepy (so you can easily enter it from the py console) to spawn the hacky editor thing into the level
+- figure out
+    we just need to nail down some rules/conventions:
+        UClass vs python class object, how StaticClass fits into the picture too, and cases where we need to know one vs the other
+        ditto: self, self.engineObj
+        is_a / isinstance support
+        given an engine obj you know is actually a python obj, get the python obj
+- start on a new and improved todo list
 
-Hmm... no, doing all of that manually for now wouldn't be that bad - unfun, but definitely doable even if lots of DRY violations.
+- remote access?
+    - main.py or another module starts up a dev remote server for a web interface with:
+        - logging w/ filtering
+        - repl
+        - maybe some custom buttons to trigger in-process actions
 
-at this point, it seems like everything except testing it in a build is in the "can do, just need to go do it" camp, with the first item on that list
-being the housekeeper, because we can't really get very far without that. New plan:
+NEW DEV PROCESS TODO
+
+- make uepy.devserver module
+    - websocket connection
+    - just supply a python class that does a websocket - real repl instead of repl in browser!
+    - svelte-based UI + Ken's css thang (maybe later? we could probably get by with a single HTML file at first)
+        wait, isn't there some thing built into python that does this already
+    - on launch, use webbrowser.open to open the dev UI
+    - setup websock conn
+    - make uepy hook to get log output
+    - repl support
+
     TODO
-        - delegates!
-            - currently leaking delegates AND having to use the crummy hack to keep the delegate alive! :(
+        - does our current approach to dev'ing SOs match the ideal or is it more based on how we used to dev BP SOs? What is the ideal?
+            - goal: invest in making it so that dev'ing SOs in PIE vs build vs editor is pretty much the same
+                - sidesteps all the weird issues with moving back and forth between PIE and editor
+                - WYSIWYG because we're not building against editor mode
+                - I think we can have an improved developer experience too
+            - features
+                - a remote repl so you can do interactive stuff
+                - a log viewer
+                - (maybe both the log viewer and the repl are web-based?)
+                - repl includes some handy utils like inspecting scene/actors easily, loading a space, etc.
+                - auto-reload of modified modules, with failsafe so that syntax errors, uncaught exceptions, etc. don't require a restart
+                - some way to easiy load and run scripts too
+            - hrm
+                - we have several big features
+                    - the remote control feature we played with for a bit
+                    - SO dev process
+                    - programmatic/parametric space construction
+                    - scriptrunner
+                    - production log viewer
+                    - runtime debugging
+                    - scriptable behaviors (light switches, control panels for blinds, auto-on lights, modify mood lighting)
+                        - eventually, parts of modus itself could be rewritten as little snippets of code like this:
+                            - load/save space
+                            - resize space
+                            - reset space
+                            - see different space configurations
+                - might they all be unified under a single umbrella feature?
+                    - still have recording/playback support
+                    - some standard way to tell modus to launch w/ a particular startup script
+                    - modus.py provides a library of APIs for "doing stuff" specific to modus (load space, spawn SOs, record/play)
+                    - modus_dev.py provides utils related to development (reloading SOs and dependencies)
+                    - need some standard way to spawn a "script actor" that runs a snippet of code (one shot or stay alive and respond to
+                        commands, etc.)
+                        - including some way to easily make them load on start (use the startup script)
+                    - the big hurdle seems to be that gameplay scripts need to by async in nature, while SOs, gamestate, etc. are more
+                        manually managed to be finegrained pieces. They should share the same API in every way possible though.
+                        - could we provide a common library that exposes a sync and an async API? Or maybe you access it through some API
+                            object, and you request either a sync or an async instance?
+                    - the solution, long term, is to always be async, i.e. get to the point where py SOs don't care about OnTick and such
+                        and don't directly call into the engine too much either. Instead, we get to the point where SOs are built using
+                        an API layer that we've built, one that is inherently async.
+                    - to do this, we need to have a very well-defined interface for SOs in terms of what interactions you can do with them,
+                        what they can do, and so on.
+                - for now at least, it looks like we have two Python silos we have to stick with, until we can create a higher level, async
+                    API layer for creating SOs:
+                        - scripting interface: scriptable behaviors, demo scripts (scriptrunner)
+                        - "programming" interface: SOs
 
-        - expose enough stuff to recreate the spawner UI
+            - what if on game start, we used python code to set things up how we want, e.g. load a space, spawn an actor, etc.
+            - as part of that, it sets up code to watch one or more actors, or all actors of a class
+            - on tick, we check to see if any dependencies have changed. if so, kill relevant actors, reload modules in order, respawn at locations
+                - any way to get their other state and restore it? (make this generic and then for modus we can get/set state normally)
+        - lib routine:
+            - given a python obj, find its class' module
+            - find all the filenames of all the modules it's based on
+                - maintain some sort of ordering of who depends on whom
+            - note their lastmod times
+            - at any time, get a snapshot of all modules that have changed (again, in order)
+        - later
+            - dropdown with all known classes + refresh button to regen list of classes
+            - spawn currently selected in drop down
+            - "watch" checkbox to automatically kill & respawn obj as it changes (auto save loc/rot and use on respawn)
+            - editbox+load button for loading space file
+            - button to dump info on selected objects
+        - have some py func that, given a py class for a UClass, can find the modules the py class depends on, track when they were last modified,
+            and provide some reload API that you can call to reload any that have changed since last reload
+        - have nomad tab spawner use this to reload the py modules right before creating the UUserWidget for the tab
+        - is there some way to tell the nomad tab spawner to rebuild its widget? if so, we could maybe have it listen for changes?
+            (this might be too much to ask for a nomad tab spawner, though we do want a lot of this functionality for normal actors and such)
+
+        - fix leaking of delegates
+        - fix crappy thing we do to keep delegates alive
+
         - create a UMG test actor
             - on start, creates a particular widget and adds it to the viewport
             - on tick, see if the widget's file has changed
             - if it has changed, remove the old widget, reload the widget's module, and add the widget to the viewport again
-        - uepy.editor module
-        - uepy.editor exposes a func to register a new nomad tab spawner
-            - takes a menu name and a class to instantiate, then instantiates it and wraps it in an SDockTab
-            - maybe it takes the module and class name so it can reload the module on open?
-            - have it unregister any prior version of it first
 
-        - add a BP widget and bind events to it
-        - add a button to it that logs a message
         - expose to py the code necessary to launch the editor utility widget, instead of having the module do it
         - start exposing to py the stuff needed to build more editor utility widgets
         - expose to py a function for helping us detect editor vs game vs whatever
@@ -154,8 +230,10 @@ being the housekeeper, because we can't really get very far without that. New pl
     - massive code cleanup to reduce all the duplication and cruft from the earlier hacking
     - what about calls to Super::??
 
-UMG vs SLATE: it looks like we can now do UUserWidget subclasses for editor panels, such that it probably makes the most sense to invest in UMG-based stuffs
+UMG vs SLATE: it looks like we can now do UUserWidget subulasses for editor panels, such that it probably makes the most sense to invest in UMG-based stuffs
 as opposed to dividing attention between slate and UMG (we can always add support for slate later if we need)
+
+?? should all the Cast methods use a reference return policy??
 
 QOL soon
 - don't require call to RegisterPythonSubclass - use a metaclass or something
@@ -165,10 +243,10 @@ QOL soon
 - prj.py needs to package up everything in Content/Scripts I think
 - W i d e c h a r output during build for some reason
 - UObject.GetName
-- FVector/FRotator default args if omitted
 - py console up/down arrow to go thru history
 - py::str <--> FString
 - default 3rd arg on createwidget call
+- 
 
 LATER
 - the engine nulls out objs it kills, so we could have the tracker turn around and fiddle with the py obj - like set a flag in the

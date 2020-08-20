@@ -46,20 +46,21 @@ class MySO(PyActor):
             log('MySO.__init__', engineObj, '(pre-casty)')
             super().__init__(uepy.AsACActor(engineObj))
             r = 1000
-            self.pos = [r*random.random(), r*random.random(), r*random.random()]
+            self.pos = [r*random.random()-r/2, r*random.random()-r/2, 0*random.random()]
             self.angle = 0
-            self.angleTarget = random.random() * 2 * math.pi
+            self.speed = random.random() * 20
+            self.angleTarget = random.random() * 2 * math.pi - math.pi
             self.dx = 0
             self.dy = 0
             self.SetRootComponent(self.CreateUStaticMeshComponent('mesh'))
             self.mesh = uepy.AsUStaticMeshComponent(self.GetRootComponent())
+            self.mesh.SetStaticMesh(couch)
         except:
             logTB()
 
     def BeginPlay(self):
         log('BeginPlay')
         try:
-            self.mesh.SetStaticMesh(rock)
             self.mat = uepy.CreateDynamicMaterialInstance(self.engineObj, masterMat)
             log('Created dynamic mat?', not not self.mat)
             if self.mat:
@@ -76,7 +77,7 @@ class MySO(PyActor):
 
             #log('TICK!!!', dt)
             if self.angleTarget is None and random.random() > 0.2:
-                self.angleTarget = random.random() * 2 * math.pi
+                self.angleTarget = random.random() * 2 * math.pi - math.pi
 
             if self.angleTarget is not None:
                 diff = abs(self.angle-self.angleTarget)
@@ -85,9 +86,9 @@ class MySO(PyActor):
                     self.angle = self.angleTarget
                     self.angleTarget = None
                 else:
-                    self.angle += (self.angleTarget-self.angle)/500
-                self.dx = math.cos(self.angle)
-                self.dy = math.sin(self.angle)
+                    self.angle += (self.angleTarget-self.angle)/500*self.speed
+                self.dx = self.speed*math.cos(self.angle)
+                self.dy = self.speed*math.sin(self.angle)
                 r = FRotator(0,0,0)
                 r.yaw = self.angle * 360 / math.pi / 2
                 self.SetActorRotation(r)
@@ -104,7 +105,8 @@ class MySO(PyActor):
     def Other(self, what):
         return '[[[' + str(what) + ']]]'
 
-uepy.RegisterPythonSubclass('MySO', '/Script/dev_uepy.CActor', MySO)
+MySO.engineClass = uepy.RegisterPythonSubclass('MySO', '/Script/dev_uepy.CActor', MySO)
+# TODO: the above is a temp hack so we keep a ref to the UClass so we can spawn it from python
 
 class AnotherSO(PyActor):
     def __init__(self, engineObj):
@@ -249,76 +251,22 @@ uepy.RegisterPythonSubclass('ColorChanger', '/Script/dev_uepy.ColorChangingActor
 #log('ACActor:', uepy.ACActor, uepy.ACActor.StaticClass().ImplementsInterface(uepy.UTestInterface.StaticClass()))
 #log('ColorChanger:', uepy.AColorChangingActor, uepy.AColorChangingActor.StaticClass().ImplementsInterface(uepy.UTestInterface.StaticClass()))
 
-class EHorizontalAlignment:
-    HAlign_Fill = Fill = 0
-    HAlign_Left = Left = 1
-    HAlign_Center = Center = 2
-    HAlign_Right = Right = 3
-
-class EVerticalAlignment:
-    VAlign_Fill = Fill = 0
-    VAlign_Top = Top = 1
-    VAlign_Center = Center = 2
-    VAlign_Bottom = Bottom = 3
-
-umg = uepy.umg
-class MyWidget:
+class HackyWorldHookActor:
+    '''Temporary hack until we have implemented GameInstance/State in Python: place one of these actors into the level
+    (or spawn it on BeginPlay) so that from Python we can hook into a few different game events.'''
     def __init__(self, engineObj):
-        self.engineObj = umg.AsUPyUserWidget(engineObj)
-        self.num = int(time.time())
+        self.engineObj = engineObj
+        import sourcewatcher as S
+        reload(S)
+        S.log = log
+        S.logTB = logTB
+        self.watcher = S.SourceWatcher('scratchpad')
 
-    def Construct(self, vboxRoot):
-        vboxRoot = umg.UVerticalBox.Cast(vboxRoot)
+    def BeginPlay(self):
+        log('HackyWorldHookActor.BeginPlay')
 
-        margin = uepy.FMargin(5,5,5,5)
+    def Tick(self, dt):
+        self.watcher.Check()
 
-        # Row: combo box of class names + refresh button
-        hb = umg.UHorizontalBox.Cast(umg.CreateWidget(vboxRoot, umg.UHorizontalBox.StaticClass(), 'hb'))
-        slot = umg.UVerticalBoxSlot.Cast(vboxRoot.AddChild(hb))
-        slot.SetPadding(margin)
+HackyWorldHookActor.engineClass = uepy.RegisterPythonSubclass('HackyWorldHookActor', '/Script/uepy.WorldHookActor', HackyWorldHookActor)
 
-        self.comboBox = umg.UComboBoxString.Cast(umg.CreateWidget(hb, umg.UComboBoxString.StaticClass(), 'comboBox'))
-        umg.UHorizontalBoxSlot.Cast(hb.AddChild(self.comboBox)).SetPadding(margin)
-        for i in range(10):
-            self.comboBox.AddOption('item %d' % i)
-        self.hackCombo = self.comboBox.BindOnSelectionChanged(self.OnSelectionChanged)
-
-        refreshButton = umg.UButton.Cast(umg.CreateWidget(hb, umg.UButton.StaticClass(), 'refreshButton'))
-        umg.UHorizontalBoxSlot.Cast(hb.AddChild(refreshButton)).SetPadding(margin)
-        label = umg.UTextBlock.Cast(umg.CreateWidget(refreshButton, umg.UTextBlock.StaticClass(), 'textblock'))
-        label.SetText('Refresh')
-        refreshButton.SetContent(label)
-        self.hackRefresh = refreshButton.BindOnClicked(self.OnClick) # TODO: we save a ref to keep the delegate alive, bah!
-
-        # Row: checkbox (delete old instances) + text
-        hb = umg.UHorizontalBox.Cast(umg.CreateWidget(vboxRoot, umg.UHorizontalBox.StaticClass(), 'hb2'))
-        slot = umg.UVerticalBoxSlot.Cast(vboxRoot.AddChild(hb))
-        slot.SetPadding(margin)
-
-        self.locationCheckbox = umg.UCheckBox.Cast(umg.CreateWidget(hb, umg.UCheckBox.StaticClass(), 'checkbox'))
-        umg.UHorizontalBoxSlot.Cast(hb.AddChild(self.locationCheckbox)).SetPadding(margin)
-        self.locationCheckbox.SetIsChecked(True)
-        self.hackCheck = self.locationCheckbox.BindOnCheckStateChanged(self.OnCheckStateChanged)
-
-        label = umg.UTextBlock.Cast(umg.CreateWidget(hb, umg.UTextBlock.StaticClass(), 'label'))
-        slot = umg.UHorizontalBoxSlot.Cast(hb.AddChild(label))
-        slot.SetVerticalAlignment(EVerticalAlignment.Center)
-        slot.SetPadding(margin)
-        label.SetText('Delete old instances before spawning')
-
-    def OnClick(self, *args, **kwargs):
-        log('ON CLIKC', self, args, kwargs)
-
-    def OnSelectionChanged(self, *args, **kwargs):
-        log('ON SELCH', self, args, kwargs)
-
-    def OnCheckStateChanged(self, *args, **kwargs):
-        log('ON CHECK', self, args, kwargs)
-
-
-uepy.RegisterPythonSubclass('MyWidget', '/script/uepy.PyUserWidget', MyWidget)
-
-'''
-UEditableTextBox
-SEditableTextBox w/ hint_text
-'''

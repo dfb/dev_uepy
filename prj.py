@@ -157,11 +157,11 @@ def BuildModus(buildRoot, newVer, isRelease, clean, buildConfig):
 
         # Some dude on the interwebs (https://blog.mi.hdm-stuttgart.de/index.php/2017/02/11/uat-automation/) says we have to
         # next use a different build command and, since I can't get RunUAT to build our DLLs, I guess he's right!
-        bat = os.path.join(prj.engine.root, 'Engine', 'Build', 'BatchFiles', 'Build.bat')
-        assert os.path.exists(bat), bat
-        args = [bat, prj.name, 'Win64', buildConfig, prj.path, '-WaitMutex']
-        ret = subprocess.run(args).returncode
-        assert not ret
+        #bat = os.path.join(prj.engine.root, 'Engine', 'Build', 'BatchFiles', 'Build.bat')
+        #assert os.path.exists(bat), bat
+        #args = [bat, prj.name, 'Win64', buildConfig, prj.path, '-WaitMutex']
+        #ret = subprocess.run(args).returncode
+        #assert not ret
     else:
         buildFlags = ['-nocompile', '-nocleanstage']
 
@@ -244,7 +244,7 @@ def BuildModus(buildRoot, newVer, isRelease, clean, buildConfig):
     os.environ['DEVUEPY_IS_BUILDING'] = '0' # see Scripts/common.py
 
 def CLIBuild(args):
-    clean = False
+    clean = True
     buildConfig = 'Shipping'
     isRelease = True
     thisDir = os.path.dirname(os.path.abspath(__file__))
