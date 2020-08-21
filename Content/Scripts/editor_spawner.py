@@ -3,24 +3,13 @@ import uepy, time
 from uepy import umg, editor
 from uepy import log, logTB
 
-class EHorizontalAlignment:
-    HAlign_Fill = Fill = 0
-    HAlign_Left = Left = 1
-    HAlign_Center = Center = 2
-    HAlign_Right = Right = 3
-
-class EVerticalAlignment:
-    VAlign_Fill = Fill = 0
-    VAlign_Top = Top = 1
-    VAlign_Center = Center = 2
-    VAlign_Bottom = Bottom = 3
-
-class SpawnerTab:
-    def __init__(self, engineObj):
-        self.engineObj = umg.AsUPyUserWidget(engineObj)
+class SpawnerTab(uepy.UUserWidget_PGLUE):
+    def __init__(self):
+        log('SpawnerTab.__init__', self.engineObj)
         self.num = int(time.time())
 
     def Construct(self, vboxRoot):
+        log('editor_spawner.SpawnerTab.Construct:', vboxRoot)
         vboxRoot = umg.UVerticalBox.Cast(vboxRoot)
 
         margin = uepy.FMargin(5,5,5,5)
@@ -55,7 +44,7 @@ class SpawnerTab:
 
         label = umg.UTextBlock.Cast(umg.CreateWidget(hb, umg.UTextBlock.StaticClass(), 'label'))
         slot = umg.UHorizontalBoxSlot.Cast(hb.AddChild(label))
-        slot.SetVerticalAlignment(EVerticalAlignment.Center)
+        slot.SetVerticalAlignment(uepy.enums.EVerticalAlignment.Center)
         slot.SetPadding(margin)
         label.SetText('Delete old instances before spawning')
 
@@ -74,8 +63,7 @@ class SpawnerTab:
     def OnCheckStateChanged(self, *args, **kwargs):
         log('ON CHECK', self, args, kwargs)
 
-UClassSpawnerTab = uepy.RegisterPythonSubclass('SpawnerTab', '/script/uepy.PyUserWidget', SpawnerTab)
-editor.RegisterNomadTabSpawner(UClassSpawnerTab, 'uepy Spawner')
+editor.RegisterNomadTabSpawner(SpawnerTab.engineClass, 'uepy Spawner')
 
 '''
 UEditableTextBox

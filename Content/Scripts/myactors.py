@@ -4,25 +4,6 @@ import random, math, os, time
 
 moduleDir = os.path.abspath(os.path.dirname(__file__))
 
-class PyActor:
-    # TODO: either auto-gen all this or, better yet, couldn't we inject the methods and properties directly from c++?
-    def __init__(self, engineObj):
-        self.engineObj = engineObj
-        log('PyActor.__init__', engineObj)
-
-    def GetWorld(self): return self.engineObj.GetWorld()
-    def SetActorLocation(self, v): self.engineObj.SetActorLocation(v) # this works because engineObj is a pointer to a real instance, and we will also write wrapper code to expose these APIs anyway
-    def GetActorLocation(self): return self.engineObj.GetActorLocation()
-    def GetActorRotation(self): return self.engineObj.GetActorRotation()
-    def SetActorRotation(self, r): self.engineObj.SetActorRotation(r)
-    def BeginPlay(self): pass
-    def Tick(self, dt): pass
-    def CreateUStaticMeshComponent(self, name): return self.engineObj.CreateUStaticMeshComponent(name)
-    def GetRootComponent(self): return self.engineObj.GetRootComponent()
-    def SetRootComponent(self, s): self.engineObj.SetRootComponent(s)
-
-    def OnSomeUserEvent(self): log('OnSomeUserEvent', self)
-
 rock = uepy.LoadMesh('/Game/StarterContent/Props/SM_Rock.SM_Rock')
 couch = uepy.LoadMesh('/Game/StarterContent/Props/SM_Couch.SM_Couch')
 meshes = [rock, couch]
@@ -32,8 +13,8 @@ textures = [
     uepy.LoadTextureFromFile(os.path.join(moduleDir, '..', 'pain.jpg')),
 ]
 
-class MySO(PyActor):
-    def __init__(self, engineObj):
+class MySO(uepy.AActor_PGLUE):
+    def __init__(self):
         # NOTE: (pay attention, cuz it took me half a day to figure this out)
         # we use the polymorphic_type_hook in uepy.h to make pybind11 aware of engine types so that, given a UObject pointer, it can perform
         # automatic downcasting. Unfortunately, we can't use game-specific types in there (in part because that table is declared in uepy and isn't
@@ -43,8 +24,6 @@ class MySO(PyActor):
         # do that because it's all template-based. So instead we receive an engineObj here and then require the game module to expose a casting API
         # so that we can get pybind11 to send us a properly downcasted variable, which we store for future calls.
         try:
-            log('MySO.__init__', engineObj, '(pre-casty)')
-            super().__init__(uepy.AsACActor(engineObj))
             r = 1000
             self.pos = [r*random.random()-r/2, r*random.random()-r/2, 0*random.random()]
             self.angle = 0
@@ -53,16 +32,15 @@ class MySO(PyActor):
             self.dx = 0
             self.dy = 0
             self.SetRootComponent(self.CreateUStaticMeshComponent('mesh'))
-            self.mesh = uepy.AsUStaticMeshComponent(self.GetRootComponent())
+            self.mesh = uepy.UStaticMeshComponent.Cast(self.GetRootComponent())
             self.mesh.SetStaticMesh(couch)
         except:
             logTB()
 
     def BeginPlay(self):
-        log('BeginPlay')
+        self.SuperBeginPlay()
         try:
             self.mat = uepy.CreateDynamicMaterialInstance(self.engineObj, masterMat)
-            log('Created dynamic mat?', not not self.mat)
             if self.mat:
                 self.mesh.SetMaterial(0, self.mat)
         except:
@@ -105,20 +83,22 @@ class MySO(PyActor):
     def Other(self, what):
         return '[[[' + str(what) + ']]]'
 
-MySO.engineClass = uepy.RegisterPythonSubclass('MySO', '/Script/dev_uepy.CActor', MySO)
-# TODO: the above is a temp hack so we keep a ref to the UClass so we can spawn it from python
+class SubSO(MySO):
+    def __init__(self):
+        super().__init__()
+        self.speed *= 10
 
-class AnotherSO(PyActor):
-    def __init__(self, engineObj):
+class AnotherSO(uepy.AActor_PGLUE):
+    def __init__(self):
         try:
-            super().__init__(uepy.AsACActor(engineObj))
             self.SetRootComponent(self.CreateUStaticMeshComponent('mesh'))
-            self.mesh = uepy.AsUStaticMeshComponent(self.GetRootComponent())
+            self.mesh = uepy.UStaticMeshComponent.Cast(self.GetRootComponent())
             self.mesh.SetStaticMesh(couch)
         except:
             logTB()
 
     def BeginPlay(self):
+        self.SuperBeginPlay()
         self.yaw = 0
 
     def Tick(self, dt):
@@ -126,8 +106,6 @@ class AnotherSO(PyActor):
         self.yaw += dt * 10
         r.yaw = self.yaw
         self.SetActorRotation(r)
-
-uepy.RegisterPythonSubclass('AnotherSO', '/Script/dev_uepy.CActor', AnotherSO)
 
 BODY_MESH = uepy.LoadMesh('/Game/StarterContent/Props/SM_MatPreviewMesh_02.SM_MatPreviewMesh_02')
 ARM_MESH = uepy.LoadMesh('/Game/StarterContent/Props/SM_Lamp_Ceiling.SM_Lamp_Ceiling')
@@ -185,15 +163,14 @@ class TurnCommand(SentryCommand):
         newRot.yaw = self.yaw + t*self.degrees*self.dir
         self.actor.SetActorRotation(newRot)
 
-class Sentry(PyActor):
-    def __init__(self, engineObj):
+class Sentry(uepy.AActor_PGLUE):
+    def __init__(self):
         try:
-            super().__init__(uepy.AsACActor(engineObj))
             self.SetRootComponent(self.CreateUStaticMeshComponent('body'))
-            self.body = uepy.AsUStaticMeshComponent(self.GetRootComponent())
+            self.body = uepy.UStaticMeshComponent.Cast(self.GetRootComponent())
             self.body.SetStaticMesh(BODY_MESH)
             self.body.SetRelativeScale3D(FVector(0.25, 0.25, 0.25))
-            self.arm = uepy.AsUStaticMeshComponent(self.CreateUStaticMeshComponent('arm'))
+            self.arm = uepy.UStaticMeshComponent.Cast(self.CreateUStaticMeshComponent('arm'))
             self.arm.SetStaticMesh(ARM_MESH)
             self.arm.AttachToComponent(self.body)
             self.arm.SetRelativeLocation(FVector(0,0,250))
@@ -201,6 +178,7 @@ class Sentry(PyActor):
             logTB()
 
     def BeginPlay(self):
+        self.SuperBeginPlay()
         self.commands = [WalkCommand(self, 1, RR(200, 2000)), TurnCommand(self, 1, RR(10, 180), random.choice([1,-1]))]
         self.curCommand = None
         self.Update()
@@ -226,15 +204,12 @@ class Sentry(PyActor):
         cur.roll += 1
         self.arm.SetRelativeRotation(cur)
 
-uepy.RegisterPythonSubclass('Sentry', '/Script/dev_uepy.CActor', Sentry)
-
 DOOR_MESH = uepy.LoadMesh('/Game/StarterContent/Props/SM_DoorFrame.SM_DoorFrame')
-class ColorChanger(PyActor):
-    def __init__(self, engineObj):
+class ColorChanger(uepy.AActor_PGLUE):
+    def __init__(self):
         try:
-            super().__init__(uepy.AsAColorChangingActor(engineObj))
             self.SetRootComponent(self.CreateUStaticMeshComponent('body'))
-            self.body = uepy.AsUStaticMeshComponent(self.GetRootComponent())
+            self.body = uepy.UStaticMeshComponent.Cast(self.GetRootComponent())
             self.body.SetStaticMesh(DOOR_MESH)
         except:
             logTB()
@@ -246,16 +221,10 @@ class ColorChanger(PyActor):
         except:
             logTB()
 
-uepy.RegisterPythonSubclass('ColorChanger', '/Script/dev_uepy.ColorChangingActor', ColorChanger)
-
-#log('ACActor:', uepy.ACActor, uepy.ACActor.StaticClass().ImplementsInterface(uepy.UTestInterface.StaticClass()))
-#log('ColorChanger:', uepy.AColorChangingActor, uepy.AColorChangingActor.StaticClass().ImplementsInterface(uepy.UTestInterface.StaticClass()))
-
-class HackyWorldHookActor:
+class HackyWorldHookActor(uepy.AActor_PGLUE):
     '''Temporary hack until we have implemented GameInstance/State in Python: place one of these actors into the level
     (or spawn it on BeginPlay) so that from Python we can hook into a few different game events.'''
-    def __init__(self, engineObj):
-        self.engineObj = engineObj
+    def __init__(self):
         import sourcewatcher as S
         reload(S)
         S.log = log
@@ -263,10 +232,10 @@ class HackyWorldHookActor:
         self.watcher = S.SourceWatcher('scratchpad')
 
     def BeginPlay(self):
+        self.SuperBeginPlay()
         log('HackyWorldHookActor.BeginPlay')
 
     def Tick(self, dt):
         self.watcher.Check()
 
-HackyWorldHookActor.engineClass = uepy.RegisterPythonSubclass('HackyWorldHookActor', '/Script/uepy.WorldHookActor', HackyWorldHookActor)
 

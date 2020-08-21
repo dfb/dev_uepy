@@ -48,14 +48,10 @@ TODO
 
 KEEPING ME UP AT NIGHT
 (and for each, the risk: is it just a lot of work, is it the complexity, is it the unknowns?)
-1) exposing APIs/vars/events: duplication of code, maintenance, DRY - this one has me worried
-DONE - 2) object ownership / lifecycle - doable, just unfun
 3) replication, inl initial state repl - doable, but may cause us to completely invent our own
     - or not, if we can solve the get-rid-of-Become problem, and the C++ class uprops any state vars (e.g. config)
 4) interaction with legacy BP stuff (gamestate, gamemode) - doable, but maybe because we completely rip out the old stuff. also depends on replication if we go that route
     - maybe not: those things are callable from C++, no?
-DONE - (well, except for leaked handles) 5) delegate binding - doable, just need to invent something probably - make c++ delegates work, but then invent something for just-py delegates for when we get to e.g. pygameinstance and all pySOs
-6) mem leaks, packaged build issues, misc gremlins - doable, and hopefully less of an issue due to less code?
 
 big projects / areas
 - UMG / configurators (at some point: support for Ken's BP widgets or reimplement in C++/Python)
@@ -66,17 +62,29 @@ big projects / areas
     - could we make C++ side have a helper func/macro that given a py class, a uclass, or a class path produces a UClass?
 - dev process: reloading code w/o crashing, etc.
 
+
+classes plan
+- commit to git
+- rip out CActor
+- instead of hacky world hook whatever, just have a sourcewatcheractor
+- in editor, see if we can auto-spawn the source watcher actor right after PIE if it's not present
+
+- any api we expose that needs a UClass param, instead take a UClassOrPyClass and have some macro grab engineClass from pyclass if that's what was provided
+- probably get rid of all StaticClass stuff in python then!
+- all py subclasses derive from some root class, it has documented the engineClass static member
+- for now at least, still have pyClassMap in C++ to get from registered name to pyclass
+- uepy exposes some sort of PyInst(UObject) func that returns the py instance or None
+- APIs that take a UObject instance param - is there some way to let them take a pyinst as well and, in that case, auto get inst.engineObj?
+- for instance type checking:
+    expose a UObject API: is_a(UObjec& self, PyOrUClassObj klass) # for the plain uobj wrapped in py case
+    expose on IPyBridgeMixin: .is_a(UClass), .is_a(py::class_)
+
 THIS WEEK
+- make a metaclass for py subclasses and manage a repository of all of them
+- make a better spawner tab that shows them all in a dropdown, and lets you spawn/respawn currently selected
 - fix leaking of bound delegates
-- get actorwatcher working in editor, not just in PIE
 - make dev mode work only in certain scenarios, e.g. a command line param is present or in editor
 - have a shortcut in uepy (so you can easily enter it from the py console) to spawn the hacky editor thing into the level
-- figure out
-    we just need to nail down some rules/conventions:
-        UClass vs python class object, how StaticClass fits into the picture too, and cases where we need to know one vs the other
-        ditto: self, self.engineObj
-        is_a / isinstance support
-        given an engine obj you know is actually a python obj, get the python obj
 - start on a new and improved todo list
 
 - remote access?
@@ -239,14 +247,17 @@ QOL soon
 - don't require call to RegisterPythonSubclass - use a metaclass or something
 - keep delegates alive w/o saving a ref to them
 - crash on import error of main
-- reloadable modules - or maybe move this out of main to something that gets reloaded?
 - prj.py needs to package up everything in Content/Scripts I think
 - W i d e c h a r output during build for some reason
 - UObject.GetName
 - py console up/down arrow to go thru history
 - py::str <--> FString
 - default 3rd arg on createwidget call
-- 
+- since in c++ only the bridge class implements the interface, we will have duplication of code, e.g. every subclass of AActor that in
+    turn has a shim class for python will expose BeginPlay and have an impl for it. Maybe instead we can have some macro that defines
+    all of the "standard" APIs we expose for all AActor subclasses, and then the shim classes have to define only new stuff in addition to
+    that?
+- all py actors tick all the time - make that configurable
 
 LATER
 - the engine nulls out objs it kills, so we could have the tracker turn around and fiddle with the py obj - like set a flag in the
