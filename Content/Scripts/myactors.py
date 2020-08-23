@@ -238,4 +238,3 @@ class HackyWorldHookActor(uepy.AActor_PGLUE):
     def Tick(self, dt):
         self.watcher.Check()
 
-

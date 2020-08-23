@@ -30,19 +30,6 @@ def OnPreBeginPIE():
 '''
 replication? C->S events, S->multicast events, replicated variables & their initial state on a joining client
 
-for each class we want to extend in py:
-- create a CPP class
-- create a Py class
-
-for each method we want to be able to override in py:
-- CPP half has a pass-through impl that calls the py inst
-- CPP half probably also has a Super version (e.g. for BeginPlay we also create SuperBeginPlay that calls Super::BeginPlay)
-- PY half has a default impl that is empty except it calls the Super method
-
-for each API we want to be able to call from PY
-- pybind exposes wrapper for that API (both for "us" but for other code that gets a pointer to one of these objs)
-- for subclasses, PY half has a trampoline method that calls same API on self.engineObj
-
 TODO
 - impl a couple of operator overloads to see how they work, e.g. FVector + FVector
 
@@ -58,29 +45,22 @@ big projects / areas
 - delegates
 - exposing more APIs, classes, structs, enums
 - code cleanup, better macros, less repetition
-    - UClass objects vs Py classes, e.g. RegisterPythonSubclass
-    - could we make C++ side have a helper func/macro that given a py class, a uclass, or a class path produces a UClass?
-- dev process: reloading code w/o crashing, etc.
-
 
 classes plan
-- commit to git
-- rip out CActor
-- instead of hacky world hook whatever, just have a sourcewatcheractor
+- make sure all exposed APIs that want a UClass now take a py::object& instead
+- clean up py code to not ever have to call StaticClass! (fix any existing exposed APIs that take a UClass too, of course)
+
 - in editor, see if we can auto-spawn the source watcher actor right after PIE if it's not present
 
-- any api we expose that needs a UClass param, instead take a UClassOrPyClass and have some macro grab engineClass from pyclass if that's what was provided
-- probably get rid of all StaticClass stuff in python then!
-- all py subclasses derive from some root class, it has documented the engineClass static member
 - for now at least, still have pyClassMap in C++ to get from registered name to pyclass
 - uepy exposes some sort of PyInst(UObject) func that returns the py instance or None
 - APIs that take a UObject instance param - is there some way to let them take a pyinst as well and, in that case, auto get inst.engineObj?
+    - is this needed? if so, what are some examples?
 - for instance type checking:
     expose a UObject API: is_a(UObjec& self, PyOrUClassObj klass) # for the plain uobj wrapped in py case
     expose on IPyBridgeMixin: .is_a(UClass), .is_a(py::class_)
 
 THIS WEEK
-- make a metaclass for py subclasses and manage a repository of all of them
 - make a better spawner tab that shows them all in a dropdown, and lets you spawn/respawn currently selected
 - fix leaking of bound delegates
 - make dev mode work only in certain scenarios, e.g. a command line param is present or in editor
