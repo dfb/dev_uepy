@@ -5,7 +5,6 @@ from uepy import log, logTB
 
 class SpawnerTab(uepy.UUserWidget_PGLUE):
     def __init__(self):
-        log('SpawnerTab.__init__', self.engineObj)
         self.num = int(time.time())
 
     def Construct(self, vboxRoot):
@@ -20,41 +19,78 @@ class SpawnerTab(uepy.UUserWidget_PGLUE):
         slot.SetPadding(margin)
 
         self.comboBox = umg.UComboBoxString.Cast(umg.CreateWidget(hb, umg.UComboBoxString, 'comboBox'))
+        self.comboBox.SetFontSize(11)
         umg.UHorizontalBoxSlot.Cast(hb.AddChild(self.comboBox)).SetPadding(margin)
-        for i in range(10):
-            self.comboBox.AddOption('item %d' % i)
+        self.RepopulateClassList()
         self.hackCombo = self.comboBox.BindOnSelectionChanged(self.OnSelectionChanged)
+
+        spawnButton = umg.UButton.Cast(umg.CreateWidget(hb, umg.UButton, 'spawnButton'))
+        umg.UHorizontalBoxSlot.Cast(hb.AddChild(spawnButton)).SetPadding(margin)
+        label = umg.UTextBlock.Cast(umg.CreateWidget(spawnButton, umg.UTextBlock, 'textblock'))
+        label.SetText('Spawn')
+        label.SetFontSize(11)
+        spawnButton.SetContent(label)
+        self.hackSpawn = spawnButton.BindOnClicked(self.OnSpawnClicked) # TODO: we save a ref to keep the delegate alive, bah!
 
         refreshButton = umg.UButton.Cast(umg.CreateWidget(hb, umg.UButton, 'refreshButton'))
         umg.UHorizontalBoxSlot.Cast(hb.AddChild(refreshButton)).SetPadding(margin)
         label = umg.UTextBlock.Cast(umg.CreateWidget(refreshButton, umg.UTextBlock, 'textblock'))
         label.SetText('Refresh')
+        label.SetFontSize(11)
         refreshButton.SetContent(label)
-        self.hackRefresh = refreshButton.BindOnClicked(self.OnClick) # TODO: we save a ref to keep the delegate alive, bah!
+        self.hackRefresh = refreshButton.BindOnClicked(self.OnRefreshClicked) # TODO: we save a ref to keep the delegate alive, bah!
 
-        # Row: checkbox (delete old instances) + text
-        hb = umg.UHorizontalBox.Cast(umg.CreateWidget(vboxRoot, umg.UHorizontalBox, 'hb2'))
-        slot = umg.UVerticalBoxSlot.Cast(vboxRoot.AddChild(hb))
-        slot.SetPadding(margin)
+        if 0:
+            # Row: checkbox (delete old instances) + text
+            hb = umg.UHorizontalBox.Cast(umg.CreateWidget(vboxRoot, umg.UHorizontalBox, 'hb2'))
+            slot = umg.UVerticalBoxSlot.Cast(vboxRoot.AddChild(hb))
+            slot.SetPadding(margin)
 
-        self.locationCheckbox = umg.UCheckBox.Cast(umg.CreateWidget(hb, umg.UCheckBox, 'checkbox'))
-        umg.UHorizontalBoxSlot.Cast(hb.AddChild(self.locationCheckbox)).SetPadding(margin)
-        self.locationCheckbox.SetIsChecked(True)
-        self.hackCheck = self.locationCheckbox.BindOnCheckStateChanged(self.OnCheckStateChanged)
+            self.locationCheckbox = umg.UCheckBox.Cast(umg.CreateWidget(hb, umg.UCheckBox, 'checkbox'))
+            umg.UHorizontalBoxSlot.Cast(hb.AddChild(self.locationCheckbox)).SetPadding(margin)
+            self.locationCheckbox.SetIsChecked(True)
+            self.hackCheck = self.locationCheckbox.BindOnCheckStateChanged(self.OnCheckStateChanged)
 
-        label = umg.UTextBlock.Cast(umg.CreateWidget(hb, umg.UTextBlock, 'label'))
-        slot = umg.UHorizontalBoxSlot.Cast(hb.AddChild(label))
-        slot.SetVerticalAlignment(uepy.enums.EVerticalAlignment.Center)
-        slot.SetPadding(margin)
-        label.SetText('Delete old instances before spawning')
+            label = umg.UTextBlock.Cast(umg.CreateWidget(hb, umg.UTextBlock, 'label'))
+            slot = umg.UHorizontalBoxSlot.Cast(hb.AddChild(label))
+            slot.SetVerticalAlignment(uepy.enums.EVerticalAlignment.Center)
+            slot.SetPadding(margin)
+            label.SetText('Delete old instances before spawning')
+        else:
+            # msg telling them to use sourcewatcher
+            hb = umg.UHorizontalBox.Cast(umg.CreateWidget(vboxRoot, umg.UHorizontalBox, 'hb2'))
+            slot = umg.UVerticalBoxSlot.Cast(vboxRoot.AddChild(hb))
+            label.SetFontSize(11)
+            slot.SetPadding(margin)
 
-    def OnClick(self, *args, **kwargs):
-        log('ON CLIKC', self, args, kwargs)
-        import myactors as m
-        world = editor.GetWorld()
-        log('WORLD:', world)
-        uepy.SpawnActor(world, m.HackyWorldHookActor)
-        log('SPAWNED!')
+            label = umg.UTextBlock.Cast(umg.CreateWidget(hb, umg.UTextBlock, 'label'))
+            label.SetFontSize(11)
+            slot = umg.UHorizontalBoxSlot.Cast(hb.AddChild(label))
+            slot.SetVerticalAlignment(uepy.enums.EVerticalAlignment.Center)
+            slot.SetPadding(margin)
+            label.SetText('Instead of using this spawner, ask dave about using sourcewatcher!')
+
+    def RepopulateClassList(self):
+        self.comboBox.ClearOptions()
+        classes = uepy.GetPythonEngineSubclasses()
+        classes = [x for x in classes if issubclass(x, uepy.AActor_PGLUE)] # filter out widget classes
+        classes.sort(key=lambda x:x.__name__)
+        self.classes = classes
+        for c in classes:
+            self.comboBox.AddOption(c.__name__)
+        self.comboBox.SetSelectedIndex(0)
+
+    def OnRefreshClicked(self, *args, **kwargs):
+        # TODO: we're only refreshing the list, not triggering any modules to reload
+        self.RepopulateClassList()
+
+    def OnSpawnClicked(self, *args, **kwargs):
+        editor.DeselectAllActors()
+        world = editor.GetWorld() # TODO: how about just uepy.GetWorld to allow spawning during PIE too?
+        index = max(0,self.comboBox.GetSelectedIndex())
+        klass = self.classes[index]
+        actor = uepy.SpawnActor(world, klass)
+        editor.SelectActor(actor)
 
     def OnSelectionChanged(self, *args, **kwargs):
         log('ON SELCH', self, args, kwargs)

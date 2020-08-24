@@ -238,3 +238,11 @@ class HackyWorldHookActor(uepy.AActor_PGLUE):
     def Tick(self, dt):
         self.watcher.Check()
 
+def Boom():
+    for a in uepy.GetAllActorsOfClass(uepy.GetWorld(), MySO):
+        p = uepy.PyInst(a)
+        p.angle = p.angleTarget = 0
+
+
+
+

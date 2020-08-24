@@ -30,43 +30,20 @@ def OnPreBeginPIE():
 '''
 replication? C->S events, S->multicast events, replicated variables & their initial state on a joining client
 
-TODO
-- impl a couple of operator overloads to see how they work, e.g. FVector + FVector
-
-KEEPING ME UP AT NIGHT
-(and for each, the risk: is it just a lot of work, is it the complexity, is it the unknowns?)
-3) replication, inl initial state repl - doable, but may cause us to completely invent our own
-    - or not, if we can solve the get-rid-of-Become problem, and the C++ class uprops any state vars (e.g. config)
-4) interaction with legacy BP stuff (gamestate, gamemode) - doable, but maybe because we completely rip out the old stuff. also depends on replication if we go that route
-    - maybe not: those things are callable from C++, no?
-
-big projects / areas
-- UMG / configurators (at some point: support for Ken's BP widgets or reimplement in C++/Python)
-- delegates
-- exposing more APIs, classes, structs, enums
-- code cleanup, better macros, less repetition
-
-classes plan
-- make sure all exposed APIs that want a UClass now take a py::object& instead
-- clean up py code to not ever have to call StaticClass! (fix any existing exposed APIs that take a UClass too, of course)
-
-- in editor, see if we can auto-spawn the source watcher actor right after PIE if it's not present
-
-- for now at least, still have pyClassMap in C++ to get from registered name to pyclass
-- uepy exposes some sort of PyInst(UObject) func that returns the py instance or None
-- APIs that take a UObject instance param - is there some way to let them take a pyinst as well and, in that case, auto get inst.engineObj?
-    - is this needed? if so, what are some examples?
-- for instance type checking:
-    expose a UObject API: is_a(UObjec& self, PyOrUClassObj klass) # for the plain uobj wrapped in py case
-    expose on IPyBridgeMixin: .is_a(UClass), .is_a(py::class_)
-
 THIS WEEK
-- make a better spawner tab that shows them all in a dropdown, and lets you spawn/respawn currently selected
+- all py actors tick all the time - make that configurable
+- design and build a better way for dev mode, source watcher, etc. to exist
+    - maybe consolidate it under an EnableDevMode API, and then figure out when/where to call that from
+    - a little tricky right now since we don't have GameState/GameInstance written in Python yet
+- document the "preferred" dev process
+- upgrade to py 3.8.5 and see if it still works
+- try having UnrealEnginePython coexist with uepy
+    - if it works, pause and rethink CScriptRunner as a global and instead think about being able to run async scripts from all over the place
+        - maybe the current scriptrunner is a more beefed up, special case of a more generally useful script running actor?
+
+NEXT WEEK, MAYBE
 - fix leaking of bound delegates
 - make dev mode work only in certain scenarios, e.g. a command line param is present or in editor
-- have a shortcut in uepy (so you can easily enter it from the py console) to spawn the hacky editor thing into the level
-- start on a new and improved todo list
-
 - remote access?
     - main.py or another module starts up a dev remote server for a web interface with:
         - logging w/ filtering
@@ -74,7 +51,6 @@ THIS WEEK
         - maybe some custom buttons to trigger in-process actions
 
 NEW DEV PROCESS TODO
-
 - make uepy.devserver module
     - websocket connection
     - just supply a python class that does a websocket - real repl instead of repl in browser!
@@ -135,75 +111,22 @@ NEW DEV PROCESS TODO
                         - "programming" interface: SOs
 
             - what if on game start, we used python code to set things up how we want, e.g. load a space, spawn an actor, etc.
-            - as part of that, it sets up code to watch one or more actors, or all actors of a class
-            - on tick, we check to see if any dependencies have changed. if so, kill relevant actors, reload modules in order, respawn at locations
-                - any way to get their other state and restore it? (make this generic and then for modus we can get/set state normally)
-        - lib routine:
-            - given a python obj, find its class' module
-            - find all the filenames of all the modules it's based on
-                - maintain some sort of ordering of who depends on whom
-            - note their lastmod times
-            - at any time, get a snapshot of all modules that have changed (again, in order)
-        - later
-            - dropdown with all known classes + refresh button to regen list of classes
-            - spawn currently selected in drop down
-            - "watch" checkbox to automatically kill & respawn obj as it changes (auto save loc/rot and use on respawn)
-            - editbox+load button for loading space file
-            - button to dump info on selected objects
-        - have some py func that, given a py class for a UClass, can find the modules the py class depends on, track when they were last modified,
-            and provide some reload API that you can call to reload any that have changed since last reload
-        - have nomad tab spawner use this to reload the py modules right before creating the UUserWidget for the tab
         - is there some way to tell the nomad tab spawner to rebuild its widget? if so, we could maybe have it listen for changes?
             (this might be too much to ask for a nomad tab spawner, though we do want a lot of this functionality for normal actors and such)
 
         - fix leaking of delegates
         - fix crappy thing we do to keep delegates alive
 
-        - create a UMG test actor
-            - on start, creates a particular widget and adds it to the viewport
-            - on tick, see if the widget's file has changed
-            - if it has changed, remove the old widget, reload the widget's module, and add the widget to the viewport again
-
-        - expose to py the code necessary to launch the editor utility widget, instead of having the module do it
-        - start exposing to py the stuff needed to build more editor utility widgets
         - expose to py a function for helping us detect editor vs game vs whatever
         - have main.py's Init, if in editor, import spawner module
-        - flesh out spawner module and uepy.umg as needed
-        - impl some stuff in spawner
-            - filter/dropdown w/ actor classes + spawn button
-            - delete and respawn selected
-            - watch & reload
-
-        - umg
-            - create a UEditorUtilityWidget
-            - compare notes with the plugin stuffs - which approach should we use?
-            - learn how to make a widget in UMG editor but control it via C++ (and then python)
-            - make a dummy PSO widget that has a button that spawns a MySO or something
-            - finally maybe get into the work of tracking registered classes so we can make a list of them?
-
-            - in BP, create some new UMG panel with logic behind it - a button that broadcasts a msg to actors to e.g. change their color
-            - make a BP actor that responds to that event
-            - bind a key to show/hide this umg panel (2d, over the 3d window)
-            - make C++ & Py actors implement that interface and get it working
-            - side quest: see if we can say that only the py actor implements it! - have REgisterPyClass take an optional list of interface classes
-            - create another UMG panel, this time just in python, that does more or less the same thing
-            - have a separate key show/hide it as well
 
         - side quest: experiment to see if we /could/ expose some uprops to the editor, e.g. an editor-editable int prop for starters
             - gonna need a UI button to spawn a python obj
             - if that works, see if we can successfully save a python actor in the map!!
             - if that works, see if we can also expose ufunctions too?? (maybe as a later 'todo')
-        - noodle on organization some
-            - uepy.classes, .structs, .enums? or better to have uepy.umg, .actor, .mesh, .material ? both? (thinking in terms of both classes but also supporting helper code)
-            ue
-            - org of plugin-supplied C++ and py code - where does that all live in the filesystem, how is it managed?
-        - do something with umg
-        - do something with binding to a delegate event
-        - figure out module reloading - any way to auto reload stuff if we're in PIE? or maybe on prepie start we just reload everything in order anyway?
         - start making Compile button not cause us to completely blow up
         - and then... maybe see if we can get UnrealEnginePython to coexist with uepy?
             - if so, bring it into 4.23 and get scriptrunner moved over to uepy
-
 
     - add rudimentary uepy plugin to modus 4.23
     - start hacking until we have 1 fully functional PSO
@@ -224,7 +147,6 @@ as opposed to dividing attention between slate and UMG (we can always add suppor
 ?? should all the Cast methods use a reference return policy??
 
 QOL soon
-- don't require call to RegisterPythonSubclass - use a metaclass or something
 - keep delegates alive w/o saving a ref to them
 - crash on import error of main
 - prj.py needs to package up everything in Content/Scripts I think
@@ -237,7 +159,6 @@ QOL soon
     turn has a shim class for python will expose BeginPlay and have an impl for it. Maybe instead we can have some macro that defines
     all of the "standard" APIs we expose for all AActor subclasses, and then the shim classes have to define only new stuff in addition to
     that?
-- all py actors tick all the time - make that configurable
 
 LATER
 - the engine nulls out objs it kills, so we could have the tracker turn around and fiddle with the py obj - like set a flag in the
@@ -260,5 +181,14 @@ LATER
     https://answers.unrealengine.com/questions/247249/call-a-blueprint-function-from-c.html
     https://answers.unrealengine.com/questions/116529/call-blueprint-functions-from-c.html
     https://github.com/iniside/ActionRPGGame/blob/master/Source/ActionRPGGame/Private/UI/Menu/ARLoginScreenView.cpp
+- impl a couple of operator overloads to see how they work, e.g. FVector + FVector
+- APIs that take a UObject (e.g. uepy.CreateDynamicMaterialInstance) - can we let them pass foo.engineObj or just foo instead? like w/ classes?
+- for instance type checking:
+    expose a UObject API: is_a(UObjec& self, PyOrUClassObj klass) # for the plain uobj wrapped in py case
+    expose on IPyBridgeMixin: .is_a(UClass), .is_a(py::class_)
+    also is_subclass maybe?
+    hmm, these are pretty tricky, because PyOrUClass stuff automatically takes us all the way up the inheritance tree to the glue class,
+    so it could easily result in is_a=true for cases where it's not - maybe we require UClass params in that case? and then if you
+    need to do py, you use isinstance like normal?
 '''
 
