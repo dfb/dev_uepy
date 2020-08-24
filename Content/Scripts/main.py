@@ -31,6 +31,7 @@ def OnPreBeginPIE():
 replication? C->S events, S->multicast events, replicated variables & their initial state on a joining client
 
 THIS WEEK
+- ue4.25 test + build
 - all py actors tick all the time - make that configurable
 - design and build a better way for dev mode, source watcher, etc. to exist
     - maybe consolidate it under an EnableDevMode API, and then figure out when/where to call that from
