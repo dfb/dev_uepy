@@ -24,6 +24,7 @@ class MySO(uepy.AActor_PGLUE):
         # do that because it's all template-based. So instead we receive an engineObj here and then require the game module to expose a casting API
         # so that we can get pybind11 to send us a properly downcasted variable, which we store for future calls.
         try:
+            self.SetActorTickEnabled(True)
             r = 1000
             self.pos = [r*random.random()-r/2, r*random.random()-r/2, 0*random.random()]
             self.angle = 0
@@ -91,6 +92,7 @@ class SubSO(MySO):
 class AnotherSO(uepy.AActor_PGLUE):
     def __init__(self):
         try:
+            self.SetActorTickEnabled(True)
             self.SetRootComponent(self.CreateUStaticMeshComponent('mesh'))
             self.mesh = uepy.UStaticMeshComponent.Cast(self.GetRootComponent())
             self.mesh.SetStaticMesh(couch)
@@ -166,6 +168,7 @@ class TurnCommand(SentryCommand):
 class Sentry(uepy.AActor_PGLUE):
     def __init__(self):
         try:
+            self.SetActorTickEnabled(True)
             self.SetRootComponent(self.CreateUStaticMeshComponent('body'))
             self.body = uepy.UStaticMeshComponent.Cast(self.GetRootComponent())
             self.body.SetStaticMesh(BODY_MESH)
@@ -208,6 +211,7 @@ DOOR_MESH = uepy.LoadMesh('/Game/StarterContent/Props/SM_DoorFrame.SM_DoorFrame'
 class ColorChanger(uepy.AActor_PGLUE):
     def __init__(self):
         try:
+            self.SetActorTickEnabled(True)
             self.SetRootComponent(self.CreateUStaticMeshComponent('body'))
             self.body = uepy.UStaticMeshComponent.Cast(self.GetRootComponent())
             self.body.SetStaticMesh(DOOR_MESH)
@@ -225,6 +229,7 @@ class HackyWorldHookActor(uepy.AActor_PGLUE):
     '''Temporary hack until we have implemented GameInstance/State in Python: place one of these actors into the level
     (or spawn it on BeginPlay) so that from Python we can hook into a few different game events.'''
     def __init__(self):
+        self.SetActorTickEnabled(True)
         import sourcewatcher as S
         reload(S)
         S.log = log
