@@ -31,14 +31,24 @@ def OnPreBeginPIE():
 replication? C->S events, S->multicast events, replicated variables & their initial state on a joining client
 
 THIS WEEK
+- rudimentary PSO just to see what happens
+    - make a simple SO and import it in main.py
+    - manually spawn it into level pre-PIE
+    - see if modus rejects it or not
+    - see if configurefromsaveinfo gets called or not
+- expose EasyJson via pybind, clean up the string-based hacks you did
+- create a baseline scriptrunner actor
+- some way to configure uepy to use fully-qualified class names or not
 - design and build a better way for dev mode, source watcher, etc. to exist
-    - maybe consolidate it under an EnableDevMode API, and then figure out when/where to call that from
+    - or at least clean it all up so that it's easy to enable it in a prj
+        - spawn a sourcewatcher actor and persist it to your level
+        - on begin play, have your level BP do it perhaps
+        - but make it so that no other steps are required beyond that
+        - what about in a built package? I think we have to have CGameState spawn one, after checking command line args
     - a little tricky right now since we don't have GameState/GameInstance written in Python yet
 - document the "preferred" dev process
-- upgrade to py 3.8.5 and see if it still works
-- try having UnrealEnginePython coexist with uepy
-    - if it works, pause and rethink CScriptRunner as a global and instead think about being able to run async scripts from all over the place
-        - maybe the current scriptrunner is a more beefed up, special case of a more generally useful script running actor?
+    - while modus (or at least PIE) are running, prolly in 2D mode, but maybe not so you can quickly get in VR and try it?
+    - UEPYAssistantActor
 
 NEXT WEEK, MAYBE
 - fix leaking of bound delegates
@@ -87,6 +97,9 @@ NEW DEV PROCESS TODO
                             - resize space
                             - reset space
                             - see different space configurations
+                        - a lot of the above could be logic in the relevant actors, so maybe for now our main use case is just the
+                            global scriptrunner for demos and stuff, though it might be nice to have some helper scripts at some point
+                            that are possibly running independently of the global one
                 - might they all be unified under a single umbrella feature?
                     - still have recording/playback support
                     - some standard way to tell modus to launch w/ a particular startup script
@@ -117,15 +130,11 @@ NEW DEV PROCESS TODO
         - fix crappy thing we do to keep delegates alive
 
         - expose to py a function for helping us detect editor vs game vs whatever
-        - have main.py's Init, if in editor, import spawner module
+            - build vs prj.py run (CLI) vs PIE vs in editor pre-PIE
 
         - side quest: experiment to see if we /could/ expose some uprops to the editor, e.g. an editor-editable int prop for starters
-            - gonna need a UI button to spawn a python obj
-            - if that works, see if we can successfully save a python actor in the map!!
             - if that works, see if we can also expose ufunctions too?? (maybe as a later 'todo')
         - start making Compile button not cause us to completely blow up
-        - and then... maybe see if we can get UnrealEnginePython to coexist with uepy?
-            - if so, bring it into 4.23 and get scriptrunner moved over to uepy
 
     - add rudimentary uepy plugin to modus 4.23
     - start hacking until we have 1 fully functional PSO
@@ -142,8 +151,6 @@ NEW DEV PROCESS TODO
 
 UMG vs SLATE: it looks like we can now do UUserWidget subulasses for editor panels, such that it probably makes the most sense to invest in UMG-based stuffs
 as opposed to dividing attention between slate and UMG (we can always add support for slate later if we need)
-
-?? should all the Cast methods use a reference return policy??
 
 QOL soon
 - keep delegates alive w/o saving a ref to them
@@ -189,5 +196,7 @@ LATER
     hmm, these are pretty tricky, because PyOrUClass stuff automatically takes us all the way up the inheritance tree to the glue class,
     so it could easily result in is_a=true for cases where it's not - maybe we require UClass params in that case? and then if you
     need to do py, you use isinstance like normal?
+- hrm, auto-calls to super: if you don't override BeginPlay in our fake subclassing, does SuperBeginPlay get called like it should?
+    - maybe instead of a for-sure call to e.g. BeginPlay, we test if it's present and if not we call super?
 '''
 

@@ -248,6 +248,31 @@ def Boom():
         p = uepy.PyInst(a)
         p.angle = p.angleTarget = 0
 
+class ABobActor_PGLUE(uepy.AActor_PGLUE):
+    def SomeAPI(self): self.engineObj.SomeAPI()
 
+bases = [b for b in ABobActor_PGLUE.__bases__ if b != object]
+log('BOB PGLUE:', type(ABobActor_PGLUE) is uepy.PyGlueMetaclass, bases)
 
+class MyBob(ABobActor_PGLUE, metaclass=uepy.PyGlueMetaclass):
+    def __init__(self):
+        try:
+            log('MyBob.__init__', self.engineObj)
+            self.count = 0
+            self.SetActorTickEnabled(True)
+        except:
+            logTB()
 
+    def Tick(self, dt):
+        self.count += 1
+        if not self.count % 100:
+            log('TICKING', self.count)
+
+    def SomeAPI(self):
+        log('MyBob.SomeAPI ya\'ll!!!')
+
+def B2():
+    for a in uepy.GetAllActorsOfClass(uepy.GetWorld(), MyBob):
+        log('A:', a) #, a.engineObj)
+        a.SomeAPI()
+B2()
