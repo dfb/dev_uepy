@@ -250,11 +250,12 @@ def Boom():
 
 class ABobActor_PGLUE(uepy.AActor_PGLUE):
     def SomeAPI(self): self.engineObj.SomeAPI()
+uepy.CPROPS(ABobActor_PGLUE ,'bpProp', 'cProp')
 
 bases = [b for b in ABobActor_PGLUE.__bases__ if b != object]
 log('BOB PGLUE:', type(ABobActor_PGLUE) is uepy.PyGlueMetaclass, bases)
 
-class MyBob(ABobActor_PGLUE, metaclass=uepy.PyGlueMetaclass):
+class MyBob(ABobActor_PGLUE):
     def __init__(self):
         try:
             log('MyBob.__init__', self.engineObj)
@@ -266,7 +267,7 @@ class MyBob(ABobActor_PGLUE, metaclass=uepy.PyGlueMetaclass):
     def Tick(self, dt):
         self.count += 1
         if not self.count % 100:
-            log('TICKING', self.count)
+            log('TICKING', self.count, self.bpProp, self.cProp)
 
     def SomeAPI(self):
         log('MyBob.SomeAPI ya\'ll!!!')

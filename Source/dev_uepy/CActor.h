@@ -13,6 +13,9 @@ class DEV_UEPY_API ABobActor : public AActor
 public:
 	ABobActor() {}
 	virtual void SomeAPI();
+
+    UPROPERTY(BlueprintReadWrite) int bpProp = 100;
+    int cProp = 5000;
 };
 
 UCLASS()

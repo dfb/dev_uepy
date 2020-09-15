@@ -15,6 +15,8 @@ void FinishPythonInit(py::module& uepy)
         .def("SomeAPI", [](ABobActor& self) { self.SomeAPI(); })
         .def_static("StaticClass", []() { return ABobActor::StaticClass(); })
         .def_static("Cast", [](UObject *w) { return Cast<ABobActor>(w); }, py::return_value_policy::reference)
+        .def_readwrite("bpProp", &ABobActor::bpProp)
+        .def_readwrite("cProp", &ABobActor::cProp)
         ;
     py::class_<ABobActor_CGLUE, ABobActor, UnrealTracker<ABobActor_CGLUE>>(glueclasses, "ABobActor_CGLUE")
         .def_static("StaticClass", []() { return ABobActor_CGLUE::StaticClass(); })

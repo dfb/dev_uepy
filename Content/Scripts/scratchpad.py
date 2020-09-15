@@ -16,7 +16,7 @@ def OnModuleBeforeReload(watcher):
 
 def OnModuleAfterReload(watcher, state):
     log('AFTER RELOAD!!!')
-    if 0:
+    if 1:
         for i in range(100):
             SpawnActor(GetWorld(), myactors.MySO)
     SpawnActor(GetWorld(), myactors.MyBob)

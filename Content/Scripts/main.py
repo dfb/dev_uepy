@@ -31,12 +31,7 @@ def OnPreBeginPIE():
 replication? C->S events, S->multicast events, replicated variables & their initial state on a joining client
 
 THIS WEEK
-- rudimentary PSO just to see what happens
-    - make a simple SO and import it in main.py
-    - manually spawn it into level pre-PIE
-    - see if modus rejects it or not
-    - see if configurefromsaveinfo gets called or not
-- expose EasyJson via pybind, clean up the string-based hacks you did
+- figure out how to handle R/W props on C++ classes - how that gets expressed in the PGLUE class
 - create a baseline scriptrunner actor
 - some way to configure uepy to use fully-qualified class names or not
 - design and build a better way for dev mode, source watcher, etc. to exist
@@ -159,7 +154,7 @@ QOL soon
 - W i d e c h a r output during build for some reason
 - UObject.GetName
 - py console up/down arrow to go thru history
-- py::str <--> FString
+- py::str <--> FString, (note that we first have to expose FString via pybind11, then py::implicitly_convertible<py::str, FString>()
 - default 3rd arg on createwidget call
 - since in c++ only the bridge class implements the interface, we will have duplication of code, e.g. every subclass of AActor that in
     turn has a shim class for python will expose BeginPlay and have an impl for it. Maybe instead we can have some macro that defines
