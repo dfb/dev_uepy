@@ -22,7 +22,7 @@ class SpawnerTab(uepy.UUserWidget_PGLUE):
         self.comboBox.SetFontSize(11)
         umg.UHorizontalBoxSlot.Cast(hb.AddChild(self.comboBox)).SetPadding(margin)
         self.RepopulateClassList()
-        self.hackCombo = self.comboBox.BindOnSelectionChanged(self.OnSelectionChanged)
+        self.comboBox.BindOnSelectionChanged(self.OnSelectionChanged)
 
         spawnButton = umg.UButton.Cast(umg.CreateWidget(hb, umg.UButton, 'spawnButton'))
         umg.UHorizontalBoxSlot.Cast(hb.AddChild(spawnButton)).SetPadding(margin)
@@ -30,7 +30,7 @@ class SpawnerTab(uepy.UUserWidget_PGLUE):
         label.SetText('Spawn')
         label.SetFontSize(11)
         spawnButton.SetContent(label)
-        self.hackSpawn = spawnButton.BindOnClicked(self.OnSpawnClicked) # TODO: we save a ref to keep the delegate alive, bah!
+        spawnButton.BindOnClicked(self.OnSpawnClicked)
 
         refreshButton = umg.UButton.Cast(umg.CreateWidget(hb, umg.UButton, 'refreshButton'))
         umg.UHorizontalBoxSlot.Cast(hb.AddChild(refreshButton)).SetPadding(margin)
@@ -38,7 +38,7 @@ class SpawnerTab(uepy.UUserWidget_PGLUE):
         label.SetText('Refresh')
         label.SetFontSize(11)
         refreshButton.SetContent(label)
-        self.hackRefresh = refreshButton.BindOnClicked(self.OnRefreshClicked) # TODO: we save a ref to keep the delegate alive, bah!
+        refreshButton.BindOnClicked(self.OnRefreshClicked)
 
         if 0:
             # Row: checkbox (delete old instances) + text

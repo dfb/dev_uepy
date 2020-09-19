@@ -13,10 +13,11 @@ def OnModuleBeforeReload(watcher):
     log('before reload')
     DestroyAllActorsOfClass(myactors.MySO)
     DestroyAllActorsOfClass(myactors.MyBob)
+    DestroyAllActorsOfClass(myactors.SubSO)
 
 def OnModuleAfterReload(watcher, state):
     log('AFTER RELOAD!!!')
-    if 1:
+    if 0:
         for i in range(100):
             SpawnActor(GetWorld(), myactors.MySO)
     SpawnActor(GetWorld(), myactors.MyBob)

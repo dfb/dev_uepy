@@ -31,8 +31,6 @@ def OnPreBeginPIE():
 replication? C->S events, S->multicast events, replicated variables & their initial state on a joining client
 
 THIS WEEK
-- figure out how to handle R/W props on C++ classes - how that gets expressed in the PGLUE class
-- create a baseline scriptrunner actor
 - some way to configure uepy to use fully-qualified class names or not
 - design and build a better way for dev mode, source watcher, etc. to exist
     - or at least clean it all up so that it's easy to enable it in a prj
@@ -46,7 +44,6 @@ THIS WEEK
     - UEPYAssistantActor
 
 NEXT WEEK, MAYBE
-- fix leaking of bound delegates
 - make dev mode work only in certain scenarios, e.g. a command line param is present or in editor
 - remote access?
     - main.py or another module starts up a dev remote server for a web interface with:
@@ -121,9 +118,6 @@ NEW DEV PROCESS TODO
         - is there some way to tell the nomad tab spawner to rebuild its widget? if so, we could maybe have it listen for changes?
             (this might be too much to ask for a nomad tab spawner, though we do want a lot of this functionality for normal actors and such)
 
-        - fix leaking of delegates
-        - fix crappy thing we do to keep delegates alive
-
         - expose to py a function for helping us detect editor vs game vs whatever
             - build vs prj.py run (CLI) vs PIE vs in editor pre-PIE
 
@@ -135,7 +129,7 @@ NEW DEV PROCESS TODO
     - start hacking until we have 1 fully functional PSO
     - add in a py-based configurator
     - again, verify in a packaged build
-    - tackle things like event binding, replication, spawning
+    - tackle things like replication, spawning
     - port existing PSOs while also adding in helpers to reduce manual stuffs
     - get scriptrunner working again
     - port all the remaining py stuff and rip out UnrealEnginePython
@@ -148,7 +142,6 @@ UMG vs SLATE: it looks like we can now do UUserWidget subulasses for editor pane
 as opposed to dividing attention between slate and UMG (we can always add support for slate later if we need)
 
 QOL soon
-- keep delegates alive w/o saving a ref to them
 - crash on import error of main
 - prj.py needs to package up everything in Content/Scripts I think
 - W i d e c h a r output during build for some reason
@@ -156,10 +149,6 @@ QOL soon
 - py console up/down arrow to go thru history
 - py::str <--> FString, (note that we first have to expose FString via pybind11, then py::implicitly_convertible<py::str, FString>()
 - default 3rd arg on createwidget call
-- since in c++ only the bridge class implements the interface, we will have duplication of code, e.g. every subclass of AActor that in
-    turn has a shim class for python will expose BeginPlay and have an impl for it. Maybe instead we can have some macro that defines
-    all of the "standard" APIs we expose for all AActor subclasses, and then the shim classes have to define only new stuff in addition to
-    that?
 
 LATER
 - the engine nulls out objs it kills, so we could have the tracker turn around and fiddle with the py obj - like set a flag in the
@@ -182,7 +171,6 @@ LATER
     https://answers.unrealengine.com/questions/247249/call-a-blueprint-function-from-c.html
     https://answers.unrealengine.com/questions/116529/call-blueprint-functions-from-c.html
     https://github.com/iniside/ActionRPGGame/blob/master/Source/ActionRPGGame/Private/UI/Menu/ARLoginScreenView.cpp
-- impl a couple of operator overloads to see how they work, e.g. FVector + FVector
 - APIs that take a UObject (e.g. uepy.CreateDynamicMaterialInstance) - can we let them pass foo.engineObj or just foo instead? like w/ classes?
 - for instance type checking:
     expose a UObject API: is_a(UObjec& self, PyOrUClassObj klass) # for the plain uobj wrapped in py case

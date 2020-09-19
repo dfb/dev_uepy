@@ -89,6 +89,15 @@ class SubSO(MySO):
         super().__init__()
         self.speed *= 10
 
+    def BeginPlay(self):
+        super().BeginPlay()
+        homer = uepy.SpawnActor(self.GetWorld(), Sentry)
+        homer.BindOnEndPlay(self.OnHomerDead)
+
+    def OnHomerDead(self, sentry, reason):
+        log('AAAAAAAAAAAAAAAAAA homer has died', sentry, reason)
+        #sentry.UnbindOnEndPlay(self.OnHomerDead)
+
 class AnotherSO(uepy.AActor_PGLUE):
     def __init__(self):
         try:
@@ -177,6 +186,7 @@ class Sentry(uepy.AActor_PGLUE):
             self.arm.SetStaticMesh(ARM_MESH)
             self.arm.AttachToComponent(self.body)
             self.arm.SetRelativeLocation(FVector(0,0,250))
+            self.created = time.time()
         except:
             logTB()
 
@@ -206,6 +216,9 @@ class Sentry(uepy.AActor_PGLUE):
         cur = self.arm.GetRelativeRotation()
         cur.roll += 1
         self.arm.SetRelativeRotation(cur)
+        if time.time() > self.created+5:
+            log('DESTROYING', self)
+            self.Destroy()
 
 DOOR_MESH = uepy.LoadMesh('/Game/StarterContent/Props/SM_DoorFrame.SM_DoorFrame')
 class ColorChanger(uepy.AActor_PGLUE):
