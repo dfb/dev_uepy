@@ -279,14 +279,15 @@ class MyBob(ABobActor_PGLUE):
 
     def Tick(self, dt):
         self.count += 1
-        if not self.count % 100:
-            log('TICKING', self.count, self.bpProp, self.cProp)
+        #if not self.count % 100:
+        #    log('TICKING', self.count, self.bpProp, self.cProp)
 
     def SomeAPI(self):
         log('MyBob.SomeAPI ya\'ll!!!')
 
 def B2():
     for a in uepy.GetAllActorsOfClass(uepy.GetWorld(), MyBob):
+        a = MyBob.Cast(a)
         log('A:', a) #, a.engineObj)
         a.SomeAPI()
 B2()

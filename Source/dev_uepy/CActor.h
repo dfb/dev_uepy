@@ -5,6 +5,14 @@
 #include "uepy.h"
 #include "CActor.generated.h"
 
+USTRUCT(BlueprintType)
+struct FMyStruct
+{
+    GENERATED_BODY();
+    UPROPERTY(BlueprintReadWrite, EditAnywhere) FVector moveAmount;
+    UPROPERTY(BlueprintReadWrite, EditAnywhere) bool rotating;
+};
+
 UCLASS()
 class DEV_UEPY_API ABobActor : public AActor
 {

@@ -10,7 +10,15 @@ public class dev_uepy : ModuleRules
         bUseRTTI = true;
         bEnableExceptions = true; // needed for clipper.cpp
     
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "uepy", "UMG" });
+        PublicDependencyModuleNames.AddRange(new string[] {
+            "Core",
+            "CoreUObject",
+            "Engine",
+            "InputCore",
+            "MediaAssets",
+            "uepy",
+            "UMG"
+        });
 
         PrivateDependencyModuleNames.AddRange(new string[] {  });
 

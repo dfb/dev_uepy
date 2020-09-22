@@ -22,6 +22,12 @@ void FinishPythonInit(py::module& uepy)
         .def_static("StaticClass", []() { return ABobActor_CGLUE::StaticClass(); })
         .def_static("Cast", [](UObject *w) { return Cast<ABobActor_CGLUE>(w); }, py::return_value_policy::reference)
         ;
+
+    py::class_<FMyStruct>(uepy, "FMyStruct")
+        .def(py::init<>())
+        .def_readwrite("moveAmount", &FMyStruct::moveAmount)
+        .def_readwrite("rotating", &FMyStruct::rotating)
+        ;
 }
 
 void FdevuepyModule::StartupModule()

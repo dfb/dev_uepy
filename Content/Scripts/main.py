@@ -30,6 +30,11 @@ def OnPreBeginPIE():
 '''
 replication? C->S events, S->multicast events, replicated variables & their initial state on a joining client
 
+NOW
+- any way to call a UFUNC API?
+- .get API?
+- add to AActor wrapper a .Get and .Set and maybe a .Call
+
 THIS WEEK
 - some way to configure uepy to use fully-qualified class names or not
 - design and build a better way for dev mode, source watcher, etc. to exist
