@@ -257,7 +257,7 @@ class HackyWorldHookActor(uepy.AActor_PGLUE):
         self.watcher.Check()
 
 def Boom():
-    for a in uepy.GetAllActorsOfClass(uepy.GetWorld(), MySO):
+    for a in uepy.UGameplayStatics.GetAllActorsOfClass(uepy.GetWorld(), MySO):
         p = uepy.PyInst(a)
         p.angle = p.angleTarget = 0
 
@@ -286,8 +286,8 @@ class MyBob(ABobActor_PGLUE):
         log('MyBob.SomeAPI ya\'ll!!!')
 
 def B2():
-    for a in uepy.GetAllActorsOfClass(uepy.GetWorld(), MyBob):
-        a = MyBob.Cast(a)
+    for a in uepy.UGameplayStatics.GetAllActorsOfClass(uepy.GetWorld(), MyBob):
+        a = uepy.ABobActor.Cast(a)
         log('A:', a) #, a.engineObj)
         a.SomeAPI()
 B2()

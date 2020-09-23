@@ -11,7 +11,7 @@ void FinishPythonInit(py::module& uepy)
     LOG("Setting up dev_uepy-specific Python stuff");
     py::object glueclasses = uepy.attr("glueclasses");
 
-    py::class_<ABobActor, AActor, UnrealTracker<ABobActor>>(uepy, "ABoxActor")
+    py::class_<ABobActor, AActor, UnrealTracker<ABobActor>>(uepy, "ABobActor")
         .def("SomeAPI", [](ABobActor& self) { self.SomeAPI(); })
         .def_static("StaticClass", []() { return ABobActor::StaticClass(); })
         .def_static("Cast", [](UObject *w) { return Cast<ABobActor>(w); }, py::return_value_policy::reference)
